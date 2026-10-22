@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#081321">
 <meta name="description" content="GoalMind AI estimates football match outcomes using recent results and a Poisson score model.">
-<title>GoalMind AI — Football Predictions</title>
+<title>GoalMind AI — Football Predictions (V10)</title>
 <style>
 :root{--bg:#07111f;--panel:#101e30;--panel2:#14263b;--text:#edf4ff;--muted:#9bb0c9;--green:#41e0a0;--blue:#70a7ff;--gold:#ffd166;--red:#ff7185;--line:#263a52}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% -10%,#173657 0,#07111f 42%);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -17,7 +17,7 @@
 </head>
 <body>
 <div class="wrap">
-<header class="top"><div class="logo">⚽</div><div><div class="brand">GoalMind <span style="color:var(--green)">AI</span></div><div class="sub">Football predictions · statistics + experimental astrology and Abjad</div></div><div class="tag">FORM MODEL V8 · TEAM-DATA LOOKUP</div></header>
+<header class="top"><div class="logo">⚽</div><div><div class="brand">GoalMind <span style="color:var(--green)">AI</span></div><div class="sub">Football predictions · statistics + experimental astrology and Abjad</div></div><div class="tag">FORM MODEL V10 · TEAM-DATA LOOKUP</div></header>
 <section class="hero">
 <h1>Predict the match.<br><span style="color:var(--green)">Understand the numbers.</span></h1>
 <p>Upcoming fixtures, recent team form, Poisson estimates and a separate experimental Astrology + Abjad panel — never guarantees.</p>
@@ -53,12 +53,12 @@
 </section>
 <section class="card" id="mysticInfoCard">
 <h2>4 · Astrology + Abjad Lab</h2>
-<p class="muted" style="font-size:13px">V8 automatically uses every stadium, referee, captain, coach and kit-colour field returned by the match feed. It also checks common alternate field names. Abjad uses the English team name when available, then transliterates it approximately. Details not provided by any connected source remain marked as missing; they are never guessed.</p>
+<p class="muted" style="font-size:13px">V7 automatically uses every stadium, referee, captain, coach and kit-colour field returned by the match feed. It also checks common alternate field names. Abjad uses the English team name when available, then transliterates it approximately. Details not provided by any connected source remain marked as missing; they are never guessed.</p>
 <div class="notice">Astrology and Abjad are experimental entertainment methods, not scientifically validated ways to predict football. Their picks are heuristic and must be evaluated against actual results; no method guarantees success.</div>
 </section>
 <section class="card">
 <h2>How the model works</h2>
-<p class="muted" style="font-size:13px">The model blends each team's recent scoring and conceding rates with competition averages, applies a small home advantage, and uses a Poisson score matrix to estimate 1X2, likely scores, Over/Under 2.5 and Both Teams To Score. Confidence describes data coverage and sample size — it is not the probability that a pick will win. The model does not currently use confirmed lineups, injuries, tactics, weather or bookmaker odds.</p>
+<p class="muted" style="font-size:13px">The model blends recency-weighted team scoring and conceding rates with competition averages, shrinks small samples toward league baselines, applies a modest home advantage, and uses a Poisson score matrix to estimate 1X2, likely scores, Over/Under 2.5 and Both Teams To Score. Confidence describes data coverage and sample size — it is not the probability that a pick will win. The model does not currently use confirmed lineups, injuries, tactics, weather or bookmaker odds.</p>
 <div class="notice">Predictions are statistical estimates, not guaranteed results. Exact-score probabilities are naturally much lower than 1X2 probabilities. Demo mode uses fictional sample teams and is not live data.</div>
 </section>
 <div class="footer">GoalMind AI · Unofficial fan-made tool · Check team news before kickoff · No guaranteed predictions</div>
@@ -136,38 +136,19 @@ async function loadMatches(){
     // Fetch team profiles for available club metadata (venue, club colours, coach).
     // The provider does not supply captains or match referees through this team endpoint.
     const teamIds=[...new Set(matches.flatMap(m=>[m.homeTeam?.id,m.awayTeam?.id]).filter(id=>id!=null))];
-const teamDetails={};
-
-await Promise.all(teamIds.map(async id=>{
-  try{
-    const r=await fetch(apiUrl(`/v4/teams/${encodeURIComponent(id)}`));
-    if(r.ok){
-      const t=await r.json();
-      teamDetails[id]=t;
-    }
-  }catch(e){}
-}));
-
-matches.forEach(m=>{
-  const ht=teamDetails[m.homeTeam?.id]||{};
-  const at=teamDetails[m.awayTeam?.id]||{};
-
-  m.homeTeam={
-    ...m.homeTeam,
-    venue:ht.venue||m.homeTeam?.venue||null,
-    coach:ht.coach?.name||m.homeTeam?.coach||null,
-    kit:ht.clubColors||m.homeTeam?.kit||null
-  };
-
-  m.awayTeam={
-    ...m.awayTeam,
-    venue:at.venue||m.awayTeam?.venue||null,
-    coach:at.coach?.name||m.awayTeam?.coach||null,
-    kit:at.clubColors||m.awayTeam?.kit||null
-  };
-
-  m.venue=m.venue||m.homeTeam.venue||null;
-});
+    const teamDetails={};
+    await Promise.all(teamIds.map(async id=>{
+      try{
+        const r=await fetch(apiUrl(`/v4/teams/${encodeURIComponent(id)}`));
+        if(r.ok){const t=await r.json();teamDetails[id]=t;}
+      }catch(e){ /* Team metadata is optional; predictions should still load. */ }
+    }));
+    matches.forEach(m=>{
+      const ht=teamDetails[m.homeTeam?.id]||{}, at=teamDetails[m.awayTeam?.id]||{};
+      m.homeTeam={...m.homeTeam,venue:ht.venue||m.homeTeam?.venue||null,coach:ht.coach?.name||m.homeTeam?.coach||null,kit:ht.clubColors||m.homeTeam?.kit||null};
+      m.awayTeam={...m.awayTeam,venue:at.venue||m.awayTeam?.venue||null,coach:at.coach?.name||m.awayTeam?.coach||null,kit:at.clubColors||m.awayTeam?.kit||null};
+      m.venue=m.venue||m.homeTeam.venue||null;
+    });
     if(!matches.length){
       $("matches").innerHTML='<div class="empty">No scheduled matches found in this competition/date range. Try another date range or competition.</div>';
       updateSummary([]);status(`History checked: ${history.length} completed results. No upcoming fixtures found in this date range.`);return;
@@ -193,25 +174,53 @@ function buildTeamForm(history){
 }
 const avg=a=>a&&a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+function weightedAvg(values){
+  const clean=values.filter(Number.isFinite);
+  if(!clean.length)return null;
+  let sum=0,weight=0;
+  clean.forEach((v,i)=>{const w=i+1;sum+=v*w;weight+=w;});
+  return sum/weight;
+}
+function shrink(value,prior,n,priorWeight=3){
+  return value==null?prior:(value*n+prior*priorWeight)/(n+priorWeight);
+}
 function matchForm(m,map,history){
   const home=map[m.homeTeam?.id], away=map[m.awayTeam?.id];
   const recent=t=>t?.games.slice(-6)||[];
   const h=recent(home), a=recent(away);
-  const allHome=history.map(x=>x.score.fullTime.home).filter(Number.isFinite);
-  const allAway=history.map(x=>x.score.fullTime.away).filter(Number.isFinite);
-  const leagueHome=avg(allHome)||1.5, leagueAway=avg(allAway)||1.15;
-  const hGF=avg(h.map(g=>g.gf)), hGA=avg(h.map(g=>g.ga));
-  const aGF=avg(a.map(g=>g.gf)), aGA=avg(a.map(g=>g.ga));
-  const blend=(value,base,n)=>value==null?base:(value*n+base*3)/(n+3);
-  const homeFor=avg(home?.homeFor.slice(-4)||[]), awayFor=avg(away?.awayFor.slice(-4)||[]);
-  const homeCon=avg(home?.homeAgainst.slice(-4)||[]), awayCon=avg(away?.awayAgainst.slice(-4)||[]);
-  const hAttack=blend(hGF,leagueHome,h.length), hDef=blend(hGA,leagueAway,h.length);
-  const aAttack=blend(aGF,leagueAway,a.length), aDef=blend(aGA,leagueHome,a.length);
-  const hHome=blend(homeFor,hAttack,homeFor==null?0:4), aAway=blend(awayFor,aAttack,awayFor==null?0:4);
-  const hHomeCon=blend(homeCon,hDef,homeCon==null?0:4), aAwayCon=blend(awayCon,aDef,awayCon==null?0:4);
-  const expectedHome=0.58*((hHome+aAwayCon)/2)+0.42*((hAttack+aDef)/2)+0.12;
-  const expectedAway=0.58*((aAway+hHomeCon)/2)+0.42*((aAttack+hDef)/2);
-  return {hg:clamp(expectedHome,0.2,3.5),ha:clamp(hDef,0.2,3.2),ag:clamp(expectedAway,0.2,3.2),aa:clamp(aDef,0.2,3.5),sampleSize:h.length+a.length,homeRecent:h,awayRecent:a,homePoints:avg(home?.points.slice(-5)||[]),awayPoints:avg(away?.points.slice(-5)||[])};
+  const allHome=history.map(x=>x.score?.fullTime?.home).filter(Number.isFinite);
+  const allAway=history.map(x=>x.score?.fullTime?.away).filter(Number.isFinite);
+  const leagueHome=avg(allHome)||1.45, leagueAway=avg(allAway)||1.15;
+
+  // Recency-weighted overall form, shrunk toward competition averages for small samples.
+  const hGF=shrink(weightedAvg(h.map(g=>g.gf)),leagueHome,h.length,3);
+  const hGA=shrink(weightedAvg(h.map(g=>g.ga)),leagueAway,h.length,3);
+  const aGF=shrink(weightedAvg(a.map(g=>g.gf)),leagueAway,a.length,3);
+  const aGA=shrink(weightedAvg(a.map(g=>g.ga)),leagueHome,a.length,3);
+
+  // Venue-specific records are useful, but small home/away samples should not dominate.
+  const homeGames=home?.games.filter(g=>g.isHome).slice(-5)||[];
+  const awayGames=away?.games.filter(g=>!g.isHome).slice(-5)||[];
+  const homeFor=shrink(weightedAvg(homeGames.map(g=>g.gf)),hGF,homeGames.length,3);
+  const homeCon=shrink(weightedAvg(homeGames.map(g=>g.ga)),hGA,homeGames.length,3);
+  const awayFor=shrink(weightedAvg(awayGames.map(g=>g.gf)),aGF,awayGames.length,3);
+  const awayCon=shrink(weightedAvg(awayGames.map(g=>g.ga)),aGA,awayGames.length,3);
+
+  // Attack and opponent-concession strengths are measured relative to league goal rates.
+  const safeRatio=(value,base)=>clamp(value/Math.max(.25,base),.45,1.8);
+  const homeAttack=safeRatio(.65*homeFor+.35*hGF,leagueHome);
+  const awayDefence=safeRatio(.65*awayCon+.35*aGA,leagueHome);
+  const awayAttack=safeRatio(.65*awayFor+.35*aGF,leagueAway);
+  const homeDefence=safeRatio(.65*homeCon+.35*hGA,leagueAway);
+
+  // A modest home advantage; clamp prevents extreme estimates from tiny samples.
+  const expectedHome=clamp(leagueHome*homeAttack*awayDefence*1.08,.2,3.5);
+  const expectedAway=clamp(leagueAway*awayAttack*homeDefence,.2,3.5);
+  return {
+    hg:expectedHome,ha:hGA,ag:expectedAway,aa:aGA,
+    sampleSize:h.length+a.length,homeRecent:h,awayRecent:a,
+    homePoints:avg(home?.points.slice(-5)||[]),awayPoints:avg(away?.points.slice(-5)||[])
+  };
 }
 function poisson(k,lambda){
   let p=Math.exp(-lambda);
@@ -220,22 +229,30 @@ function poisson(k,lambda){
 }
 function predict(m){
   const f=m.form||{};
-  const h=clamp(Number.isFinite(f.hg)?(f.hg+f.aa)/2:1.48,0.2,3.3);
-  const a=clamp(Number.isFinite(f.ag)?(f.ag+f.ha)/2:1.15,0.2,3.1);
+  // matchForm already combines attack, defence and home/away records into expected goals.
+  // Use those estimates directly instead of blending the defence values a second time.
+  const h=clamp(Number.isFinite(f.hg)?f.hg:1.48,0.2,3.5);
+  const a=clamp(Number.isFinite(f.ag)?f.ag:1.15,0.2,3.5);
   let home=0,draw=0,away=0,btts=0,o15=0,o25=0,u25=0,best={score:"1–1",p:0};
   const matrix=[];
-  for(let i=0;i<=10;i++){
+  // A wider score grid reduces omitted probability in high-scoring matches.
+  for(let i=0;i<=12;i++){
     matrix[i]=[];
-    for(let j=0;j<=10;j++){
+    for(let j=0;j<=12;j++){
       const p=poisson(i,h)*poisson(j,a);matrix[i][j]=p;
       if(i>j)home+=p;else if(i===j)draw+=p;else away+=p;
-      if(i>0&&j>0)btts+=p;if(i+j>=2)o15+=p;if(i+j>=3)o25+=p;if(i+j<=2)u25+=p;
+      if(i>0&&j>0)btts+=p;
+      if(i+j>=2)o15+=p;
+      if(i+j>=3)o25+=p;
+      if(i+j<=2)u25+=p;
       if(p>best.p)best={score:`${i}–${j}`,p};
     }
   }
+  // Normalize every reported probability over the same score grid.
   const total=home+draw+away;
-  home/=total;draw/=total;away/=total;
+  if(total>0){home/=total;draw/=total;away/=total;btts/=total;o15/=total;o25/=total;u25/=total;best.p/=total;}
   const sample=f.sampleSize||0;
+  // This is data coverage only, not a measured chance of being correct.
   const confidence=sample>=10?Math.min(82,58+sample):sample>=4?Math.min(68,45+sample*2):38;
   return {h,a,home,draw,away,btts,o15,o25,u25,best,confidence,sample};
 }
@@ -296,7 +313,7 @@ function renderMatches(matches){
       </div>
       <div style="margin-top:10px"><span class="pill">Model lean: ${bestPick}</span> <span class="pill">Data confidence: ${p.confidence}%</span></div>
       <div style="margin-top:10px"><button class="btn savePrediction" type="button" data-id="${escapeHtml(String(m.id||`${m.homeTeam?.name}-${m.awayTeam?.name}-${m.utcDate}`))}" ${m.demo?"disabled":""}>Save prediction</button></div>
-      <div class="mini" style="margin-top:7px">${m.demo?"Fictional demo data — not a real match prediction":p.sample?`Recent form model · ${p.sample} team-match samples`:"League baseline — recent team history unavailable"}. Confidence reflects data coverage, not guaranteed success.</div>
+      <div class="mini" style="margin-top:7px">${m.demo?"Fictional demo data — not a real match prediction":p.sample?`V10 recency-weighted form + Poisson · ${p.sample} team-match samples`:"League baseline — recent team history unavailable"}. Confidence reflects data coverage, not guaranteed success.</div>
       ${extraMatchDetails(m)}
       <div class="notice"><b>Experimental picks (not evidence-based)</b><br>Astrology heuristic: ${escapeHtml(experimentalPicks(m).astrologyPick)}<br>Abjad heuristic: ${escapeHtml(experimentalPicks(m).abjadPick)}<br><span class="mini">These are simple experimental heuristics for comparison only, not reliable astrological calculations or validated forecasts. Automatic metadata depends on fields supplied by the connected data source; this page does not invent missing facts.</span></div>
       ${manualDetailsForm(m)}
