@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#081321">
+<meta name="description" content="GoalMind AI estimates football match outcomes using recent results and a Poisson score model.">
+<title>GoalMind AI — Football Predictions</title>
+<style>
+:root{--bg:#07111f;--panel:#101e30;--panel2:#14263b;--text:#edf4ff;--muted:#9bb0c9;--green:#41e0a0;--blue:#70a7ff;--gold:#ffd166;--red:#ff7185;--line:#263a52}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% -10%,#173657 0,#07111f 42%);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.wrap{max-width:1040px;margin:auto;padding:18px 14px 44px}.top{display:flex;gap:12px;align-items:center;margin:6px 0 18px}.logo{width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#41e0a0,#70a7ff);display:grid;place-items:center;color:#07111f;font-size:25px;font-weight:900}.brand{font-size:23px;font-weight:850;letter-spacing:-.6px}.sub{color:var(--muted);font-size:12px}.tag{margin-left:auto;border:1px solid #2b4962;border-radius:999px;padding:6px 10px;color:var(--green);font-size:11px;font-weight:700}
+.hero{background:linear-gradient(135deg,#142a40,#102034);border:1px solid #29435b;border-radius:22px;padding:20px;margin-bottom:14px}.hero h1{font-size:25px;line-height:1.12;margin:0 0 9px}.hero p{color:var(--muted);margin:0 0 14px}.row{display:flex;gap:10px;flex-wrap:wrap}.btn{border:0;border-radius:12px;padding:12px 15px;font-weight:800;cursor:pointer;background:var(--green);color:#061321}.btn.secondary{background:#20344b;color:var(--text);border:1px solid #36516b}.btn:disabled{opacity:.5;cursor:wait}
+.card{background:rgba(16,30,48,.94);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}.card h2{font-size:17px;margin:0 0 12px}.muted{color:var(--muted)}label{display:block;color:#c8d7e8;font-size:12px;margin:10px 0 5px}input{font:inherit}select{width:100%;padding:12px;border:1px solid #314860;border-radius:11px;background:#081625;color:var(--text);font:inherit}.fieldgrid{display:grid;grid-template-columns:1fr;gap:8px}.status{margin-top:10px;color:var(--muted);font-size:12px;overflow-wrap:anywhere}.matches{display:grid;gap:10px}.match{border:1px solid #2a4057;background:#0b1929;border-radius:14px;padding:14px}.matchtop{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-bottom:10px}.teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;font-weight:800}.teams span:last-child{text-align:right}.vs{color:var(--muted);font-size:11px}.pick{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid #26394e}.score{font-size:24px;font-weight:900;color:var(--green)}.mini{font-size:11px;color:var(--muted)}.pill{display:inline-block;border-radius:999px;padding:4px 8px;font-size:11px;background:#20344b;color:#cbd9e8}.statgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat{background:#0a1929;border:1px solid #263a50;border-radius:12px;padding:11px}.stat strong{display:block;font-size:19px}.stat small{color:var(--muted)}.probrow{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}.prob{background:#13283d;border-radius:9px;padding:8px;text-align:center}.prob strong{display:block;font-size:17px}.prob small{font-size:10px;color:var(--muted)}.bar{height:6px;border-radius:9px;background:#263a50;overflow:hidden;margin-top:7px}.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--green))}.empty{padding:20px;text-align:center;color:var(--muted);border:1px dashed #30465c;border-radius:13px}.notice{border-left:3px solid var(--gold);padding:10px 12px;background:#2b291d;color:#e9dfbb;border-radius:8px;font-size:12px;margin-top:12px}.footer{color:#7f94ab;font-size:11px;text-align:center;margin-top:20px}
+@media(min-width:680px){.fieldgrid{grid-template-columns:1fr 1fr}.hero h1{font-size:32px}.matches{grid-template-columns:1fr 1fr}.statgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top"><div class="logo">⚽</div><div><div class="brand">GoalMind <span style="color:var(--green)">AI</span></div><div class="sub">Football predictions · statistics + experimental astrology and Abjad</div></div><div class="tag">FORM MODEL V8 · TEAM-DATA LOOKUP</div></header>
+<section class="hero">
+<h1>Predict the match.<br><span style="color:var(--green)">Understand the numbers.</span></h1>
+<p>Upcoming fixtures, recent team form, Poisson estimates and a separate experimental Astrology + Abjad panel — never guarantees.</p>
+<div class="row"><button class="btn" id="loadBtn">Load upcoming matches</button><button class="btn secondary" id="demoBtn">Try demo mode</button></div>
+<div class="status" id="status">Choose a competition and date range, then load matches.</div>
+</section>
+<section class="card">
+<h2>1 · Choose league and date range</h2>
+<div class="fieldgrid">
+<div><label for="league">Competition</label><select id="league">
+<option value="PL">Premier League (England)</option><option value="ELC">Championship (England)</option><option value="PD">La Liga (Spain)</option><option value="BL1">Bundesliga (Germany)</option><option value="SA">Serie A (Italy)</option><option value="FL1">Ligue 1 (France)</option><option value="CL">Champions League</option><option value="EL">Europa League</option><option value="DED">Eredivisie (Netherlands)</option><option value="PPL">Primeira Liga (Portugal)</option><option value="BSA">Brasileirão (Brazil)</option><option value="EC">European Championship</option><option value="WC">World Cup</option>
+</select></div>
+<div><label for="days">Upcoming days</label><select id="days"><option value="7">Next 7 days</option><option value="3">Next 3 days</option><option value="14">Next 14 days</option></select></div>
+</div>
+<div class="status">Competition and historical-data coverage depends on your football-data.org API plan. Europa League may return HTTP 403 if it is not included.</div>
+</section>
+<section class="card">
+<h2>2 · Prediction dashboard</h2>
+<div class="statgrid" id="summary">
+<div class="stat"><strong>—</strong><small>Matches loaded</small></div><div class="stat"><strong>—</strong><small>Average total goals</small></div><div class="stat"><strong>—</strong><small>Home-win lean</small></div><div class="stat"><strong>—</strong><small>BTTS yes lean</small></div>
+</div>
+<div id="matches" class="matches" style="margin-top:12px"><div class="empty">No matches yet. Load live matches or try demo mode.</div></div>
+</section>
+<section class="card" id="accuracyCard">
+<h2>3 · Prediction accuracy tracker</h2>
+<p class="muted" style="font-size:13px;margin-top:-4px">Save predictions before kickoff, then enter the final score after the match. Records are stored in this browser on this device.</p>
+<div class="statgrid" id="accuracySummary">
+<div class="stat"><strong>0</strong><small>Scored predictions</small></div><div class="stat"><strong>—</strong><small>1X2 accuracy</small></div><div class="stat"><strong>—</strong><small>Exact score accuracy</small></div><div class="stat"><strong>0</strong><small>Saved predictions</small></div>
+</div>
+<div class="row" style="margin-top:10px"><button class="btn secondary" id="exportBtn" type="button">Export history</button><button class="btn secondary" id="clearHistoryBtn" type="button">Clear history</button></div>
+<div id="accuracyHistory" style="margin-top:12px"><div class="empty">No saved predictions yet. Tap “Save prediction” on a match card.</div></div>
+<div class="notice">Accuracy is based only on predictions you saved and results you entered. Small samples can be misleading; it does not guarantee future performance.</div>
+</section>
+<section class="card" id="mysticInfoCard">
+<h2>4 · Astrology + Abjad Lab</h2>
+<p class="muted" style="font-size:13px">V8 automatically uses every stadium, referee, captain, coach and kit-colour field returned by the match feed. It also checks common alternate field names. Abjad uses the English team name when available, then transliterates it approximately. Details not provided by any connected source remain marked as missing; they are never guessed.</p>
+<div class="notice">Astrology and Abjad are experimental entertainment methods, not scientifically validated ways to predict football. Their picks are heuristic and must be evaluated against actual results; no method guarantees success.</div>
+</section>
+<section class="card">
+<h2>How the model works</h2>
+<p class="muted" style="font-size:13px">The model blends each team's recent scoring and conceding rates with competition averages, applies a small home advantage, and uses a Poisson score matrix to estimate 1X2, likely scores, Over/Under 2.5 and Both Teams To Score. Confidence describes data coverage and sample size — it is not the probability that a pick will win. The model does not currently use confirmed lineups, injuries, tactics, weather or bookmaker odds.</p>
+<div class="notice">Predictions are statistical estimates, not guaranteed results. Exact-score probabilities are naturally much lower than 1X2 probabilities. Demo mode uses fictional sample teams and is not live data.</div>
+</section>
+<div class="footer">GoalMind AI · Unofficial fan-made tool · Check team news before kickoff · No guaranteed predictions</div>
+</div>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const HISTORY_KEY = "goalmind_accuracy_history_v1";
+const DETAILS_KEY = "goalmind_match_details_v1";
+function readDetails(){try{return JSON.parse(localStorage.getItem(DETAILS_KEY)||"{}")}catch(e){return {}}}
+function writeDetails(d){localStorage.setItem(DETAILS_KEY,JSON.stringify(d))}
+function readHistory(){try{const v=JSON.parse(localStorage.getItem(HISTORY_KEY)||"[]");return Array.isArray(v)?v:[]}catch(e){return []}}
+function writeHistory(items){localStorage.setItem(HISTORY_KEY,JSON.stringify(items));renderAccuracy()}
+function outcome(h,a){return h>a?"Home win":h<a?"Away win":"Draw"}
+function renderAccuracy(){
+ const items=readHistory(), scored=items.filter(x=>x.actualHome!==null&&x.actualAway!==null);
+ const hit=scored.filter(x=>x.predictedOutcome===outcome(x.actualHome,x.actualAway)).length;
+ const astHit=scored.filter(x=>x.astrologyPick&&x.astrologyPick===outcome(x.actualHome,x.actualAway)).length;
+ const abjHit=scored.filter(x=>x.abjadPick&&x.abjadPick===outcome(x.actualHome,x.actualAway)).length;
+ const exact=scored.filter(x=>x.predictedHome===x.actualHome&&x.predictedAway===x.actualAway).length;
+ $("accuracySummary").innerHTML=`<div class="stat"><strong>${scored.length}</strong><small>Scored predictions</small></div><div class="stat"><strong>${scored.length?Math.round(hit/scored.length*100)+"%":"—"}</strong><small>Statistical 1X2</small></div><div class="stat"><strong>${scored.length?Math.round(astHit/scored.length*100)+"%":"—"}</strong><small>Astrology heuristic</small></div><div class="stat"><strong>${scored.length?Math.round(abjHit/scored.length*100)+"%":"—"}</strong><small>Abjad heuristic</small></div><div class="stat"><strong>${scored.length?Math.round(exact/scored.length*100)+"%":"—"}</strong><small>Statistical exact score</small></div><div class="stat"><strong>${items.length}</strong><small>Saved predictions</small></div>`;
+ if(!items.length){$("accuracyHistory").innerHTML='<div class="empty">No saved predictions yet. Tap “Save prediction” on a match card.</div>';return}
+ $("accuracyHistory").innerHTML=items.slice().reverse().map(x=>{const done=x.actualHome!==null&&x.actualAway!==null;const correct=done&&x.predictedOutcome===outcome(x.actualHome,x.actualAway);return `<div class="match" style="margin-bottom:8px"><div class="matchtop"><span>${escapeHtml(x.competition)}</span><span>${escapeHtml(x.date)}</span></div><div class="teams"><span>${escapeHtml(x.home)}</span><span class="vs">VS</span><span>${escapeHtml(x.away)}</span></div><div class="mini" style="margin-top:8px">Statistical: <b>${escapeHtml(x.predictedOutcome)}</b> · Astrology: <b>${escapeHtml(x.astrologyPick||"Not recorded")}</b> · Abjad: <b>${escapeHtml(x.abjadPick||"Not recorded")}</b> · Exact: <b>${x.predictedHome}–${x.predictedAway}</b></div>${done?`<div style="margin-top:8px"><span class="pill">Final: ${x.actualHome}–${x.actualAway}</span> <span class="pill">1X2: ${correct?"Correct":"Incorrect"}</span> <span class="pill">Exact: ${x.predictedHome===x.actualHome&&x.predictedAway===x.actualAway?"Correct":"Incorrect"}</span></div>`:`<form class="resultForm" data-id="${escapeHtml(x.id)}" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-top:10px"><div style="flex:1;min-width:70px"><label>Home final score</label><input name="homeScore" type="number" min="0" max="30" required style="width:100%;padding:10px;border-radius:9px;background:#081625;color:#edf4ff;border:1px solid #314860"></div><div style="flex:1;min-width:70px"><label>Away final score</label><input name="awayScore" type="number" min="0" max="30" required style="width:100%;padding:10px;border-radius:9px;background:#081625;color:#edf4ff;border:1px solid #314860"></div><button class="btn" type="submit">Save final score</button></form>`}<div style="margin-top:8px"><button class="btn secondary deletePrediction" data-id="${escapeHtml(x.id)}" type="button">Remove</button></div></div>`}).join("");
+}
+document.addEventListener("submit",e=>{if(!e.target.matches(".detailsForm"))return;e.preventDefault();const all=readDetails(),obj={...(all[e.target.dataset.id]||{})};new FormData(e.target).forEach((v,k)=>obj[k]=String(v).trim());all[e.target.dataset.id]=obj;writeDetails(all);status("Match details saved on this device.");const btn=e.target.querySelector('button[type="submit"]');if(btn){btn.textContent="Saved ✓";}});
+$("accuracyHistory").addEventListener("submit",e=>{if(!e.target.matches(".resultForm"))return;e.preventDefault();const id=e.target.dataset.id,h=Number(e.target.homeScore.value),a=Number(e.target.awayScore.value);if(!Number.isInteger(h)||!Number.isInteger(a)||h<0||a<0)return;const items=readHistory();const item=items.find(x=>x.id===id);if(item){item.actualHome=h;item.actualAway=a;item.completedAt=new Date().toISOString();writeHistory(items)}});
+$("accuracyHistory").addEventListener("click",e=>{const b=e.target.closest(".deletePrediction");if(!b)return;writeHistory(readHistory().filter(x=>x.id!==b.dataset.id))});
+$("clearHistoryBtn").addEventListener("click",()=>{if(confirm("Delete all saved predictions on this device? This cannot be undone.")){localStorage.removeItem(HISTORY_KEY);renderAccuracy()}});
+$("exportBtn").addEventListener("click",()=>{const data=JSON.stringify(readHistory(),null,2);const blob=new Blob([data],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="goalmind-prediction-history.json";a.click();URL.revokeObjectURL(url)});
+const status = (msg, bad=false) => { $("status").textContent=msg; $("status").style.color=bad?"#ff9baa":"#9bb0c9"; };
+$("loadBtn").addEventListener("click", loadMatches);
+$("demoBtn").addEventListener("click", () => {
+  renderMatches(demoMatches());
+  status("Demo mode: fictional sample fixtures and sample stats only — not live fixtures.");
+});
+function demoMatches(){
+  return [
+    {utcDate:new Date(Date.now()+86400000).toISOString(),homeTeam:{name:"Northbridge FC"},awayTeam:{name:"Riverside United"},demo:true,form:{hg:1.7,ha:1.0,ag:1.2,aa:1.4,sampleSize:12,homeRecent:[],awayRecent:[]}},
+    {utcDate:new Date(Date.now()+286400000).toISOString(),homeTeam:{name:"Metro Athletic"},awayTeam:{name:"Coastal Town"},demo:true,form:{hg:1.5,ha:0.9,ag:0.9,aa:1.3,sampleSize:10,homeRecent:[],awayRecent:[]}},
+    {utcDate:new Date(Date.now()+386400000).toISOString(),homeTeam:{name:"Red City"},awayTeam:{name:"Blue County"},demo:true,form:{hg:1.4,ha:1.4,ag:1.5,aa:1.2,sampleSize:4,homeRecent:[],awayRecent:[]}}
+  ];
+}
+const fmt = d => d.toISOString().slice(0,10);
+function apiUrl(path){
+  return '/.netlify/functions/football-data?path='+encodeURIComponent(path);
+}
+function apiError(res){
+  let msg=`API returned HTTP ${res.status}.`;
+  if(res.status===401) msg+=" The server token may be missing or invalid; check the Netlify FOOTBALL_DATA_TOKEN environment variable.";
+  if(res.status===403) msg+=" This competition or historical data may not be included in your API plan.";
+  if(res.status===429) msg+=" The API request limit may have been reached; wait and retry.";
+  return msg;
+}
+async function loadMatches(){
+  const comp=$("league").value, days=Number($("days").value);
+  const now=new Date(), to=new Date(Date.now()+days*86400000), historyFrom=new Date(Date.now()-120*86400000);
+  status("Loading upcoming fixtures and recent results…");
+  $("loadBtn").disabled=true;
+  try{
+    const upcomingPath=`/v4/competitions/${encodeURIComponent(comp)}/matches?dateFrom=${fmt(now)}&dateTo=${fmt(to)}&status=SCHEDULED`;
+    const historyPath=`/v4/competitions/${encodeURIComponent(comp)}/matches?dateFrom=${fmt(historyFrom)}&dateTo=${fmt(now)}&status=FINISHED`;
+    let upRes;
+    try{upRes=await fetch(apiUrl(upcomingPath));}catch(e){throw new Error("Could not connect to the Netlify matches function. Check your internet connection and try again.");}
+    if(!upRes.ok) throw new Error(apiError(upRes));
+    let upData;
+    try{upData=await upRes.json();}catch(e){throw new Error("Upcoming-matches response was not valid JSON.");}
+    let histRes;
+    try{histRes=await fetch(apiUrl(historyPath));}catch(e){throw new Error("Fixtures loaded, but the recent-results request failed. Please retry.");}
+    if(!histRes.ok) throw new Error("Recent results could not be loaded. "+apiError(histRes));
+    let histData;
+    try{histData=await histRes.json();}catch(e){throw new Error("Recent-results response was not valid JSON.");}
+    const history=(histData.matches||[]).filter(m=>m.status==="FINISHED"&&Number.isFinite(m.score?.fullTime?.home)&&Number.isFinite(m.score?.fullTime?.away));
+    const formMap=buildTeamForm(history);
+    const matches=(upData.matches||[]).map(m=>({...m,form:matchForm(m,formMap,history)}));
+    // Fetch team profiles for available club metadata (venue, club colours, coach).
+    // The provider does not supply captains or match referees through this team endpoint.
+    const teamIds=[...new Set(matches.flatMap(m=>[m.homeTeam?.id,m.awayTeam?.id]).filter(id=>id!=null))];
+const teamDetails={};
+
+await Promise.all(teamIds.map(async id=>{
+  try{
+    const r=await fetch(apiUrl(`/v4/teams/${encodeURIComponent(id)}`));
+    if(r.ok){
+      const t=await r.json();
+      teamDetails[id]=t;
+    }
+  }catch(e){}
+}));
+
+matches.forEach(m=>{
+  const ht=teamDetails[m.homeTeam?.id]||{};
+  const at=teamDetails[m.awayTeam?.id]||{};
+
+  m.homeTeam={
+    ...m.homeTeam,
+    venue:ht.venue||m.homeTeam?.venue||null,
+    coach:ht.coach?.name||m.homeTeam?.coach||null,
+    kit:ht.clubColors||m.homeTeam?.kit||null
+  };
+
+  m.awayTeam={
+    ...m.awayTeam,
+    venue:at.venue||m.awayTeam?.venue||null,
+    coach:at.coach?.name||m.awayTeam?.coach||null,
+    kit:at.clubColors||m.awayTeam?.kit||null
+  };
+
+  m.venue=m.venue||m.homeTeam.venue||null;
+});
+    if(!matches.length){
+      $("matches").innerHTML='<div class="empty">No scheduled matches found in this competition/date range. Try another date range or competition.</div>';
+      updateSummary([]);status(`History checked: ${history.length} completed results. No upcoming fixtures found in this date range.`);return;
+    }
+    const usable=matches.filter(m=>(m.form?.sampleSize||0)>0).length;
+    renderMatches(matches);
+    status(`Loaded ${matches.length} fixtures and ${history.length} completed results. Recent form available for ${usable} fixtures. Probabilities are estimates, not guarantees.`);
+  }catch(e){status(e.message+" Check Netlify configuration, internet connection and competition coverage.",true);}
+  finally{$("loadBtn").disabled=false;}
+}
+function buildTeamForm(history){
+  const map={};
+  history.slice().sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate)).forEach(m=>{
+    const hg=m.score.fullTime.home, ag=m.score.fullTime.away;
+    [[m.homeTeam?.id,m.homeTeam?.name,hg,ag,true],[m.awayTeam?.id,m.awayTeam?.name,ag,hg,false]].forEach(([id,name,gf,ga,isHome])=>{
+      if(id==null)return;
+      if(!map[id])map[id]={id,name,games:[],homeFor:[],homeAgainst:[],awayFor:[],awayAgainst:[],forGoals:[],againstGoals:[],points:[]};
+      const t=map[id];t.games.push({gf,ga,isHome,date:m.utcDate});t.forGoals.push(gf);t.againstGoals.push(ga);t.points.push(gf>ga?3:gf===ga?1:0);
+      if(isHome){t.homeFor.push(gf);t.homeAgainst.push(ga);}else{t.awayFor.push(gf);t.awayAgainst.push(ga);}
+    });
+  });
+  return map;
+}
+const avg=a=>a&&a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+function matchForm(m,map,history){
+  const home=map[m.homeTeam?.id], away=map[m.awayTeam?.id];
+  const recent=t=>t?.games.slice(-6)||[];
+  const h=recent(home), a=recent(away);
+  const allHome=history.map(x=>x.score.fullTime.home).filter(Number.isFinite);
+  const allAway=history.map(x=>x.score.fullTime.away).filter(Number.isFinite);
+  const leagueHome=avg(allHome)||1.5, leagueAway=avg(allAway)||1.15;
+  const hGF=avg(h.map(g=>g.gf)), hGA=avg(h.map(g=>g.ga));
+  const aGF=avg(a.map(g=>g.gf)), aGA=avg(a.map(g=>g.ga));
+  const blend=(value,base,n)=>value==null?base:(value*n+base*3)/(n+3);
+  const homeFor=avg(home?.homeFor.slice(-4)||[]), awayFor=avg(away?.awayFor.slice(-4)||[]);
+  const homeCon=avg(home?.homeAgainst.slice(-4)||[]), awayCon=avg(away?.awayAgainst.slice(-4)||[]);
+  const hAttack=blend(hGF,leagueHome,h.length), hDef=blend(hGA,leagueAway,h.length);
+  const aAttack=blend(aGF,leagueAway,a.length), aDef=blend(aGA,leagueHome,a.length);
+  const hHome=blend(homeFor,hAttack,homeFor==null?0:4), aAway=blend(awayFor,aAttack,awayFor==null?0:4);
+  const hHomeCon=blend(homeCon,hDef,homeCon==null?0:4), aAwayCon=blend(awayCon,aDef,awayCon==null?0:4);
+  const expectedHome=0.58*((hHome+aAwayCon)/2)+0.42*((hAttack+aDef)/2)+0.12;
+  const expectedAway=0.58*((aAway+hHomeCon)/2)+0.42*((aAttack+hDef)/2);
+  return {hg:clamp(expectedHome,0.2,3.5),ha:clamp(hDef,0.2,3.2),ag:clamp(expectedAway,0.2,3.2),aa:clamp(aDef,0.2,3.5),sampleSize:h.length+a.length,homeRecent:h,awayRecent:a,homePoints:avg(home?.points.slice(-5)||[]),awayPoints:avg(away?.points.slice(-5)||[])};
+}
+function poisson(k,lambda){
+  let p=Math.exp(-lambda);
+  for(let i=1;i<=k;i++)p*=lambda/i;
+  return p;
+}
+function predict(m){
+  const f=m.form||{};
+  const h=clamp(Number.isFinite(f.hg)?(f.hg+f.aa)/2:1.48,0.2,3.3);
+  const a=clamp(Number.isFinite(f.ag)?(f.ag+f.ha)/2:1.15,0.2,3.1);
+  let home=0,draw=0,away=0,btts=0,o15=0,o25=0,u25=0,best={score:"1–1",p:0};
+  const matrix=[];
+  for(let i=0;i<=7;i++){
+    matrix[i]=[];
+    for(let j=0;j<=7;j++){
+      const p=poisson(i,h)*poisson(j,a);matrix[i][j]=p;
+      if(i>j)home+=p;else if(i===j)draw+=p;else away+=p;
+      if(i>0&&j>0)btts+=p;if(i+j>=2)o15+=p;if(i+j>=3)o25+=p;if(i+j<=2)u25+=p;
+      if(p>best.p)best={score:`${i}–${j}`,p};
+    }
+  }
+  const total=home+draw+away;
+  home/=total;draw/=total;away/=total;
+  const sample=f.sampleSize||0;
+  const confidence=sample>=10?Math.min(82,58+sample):sample>=4?Math.min(68,45+sample*2):38;
+  return {h,a,home,draw,away,btts,o15,o25,u25,best,confidence,sample};
+}
+function pct(n){return `${Math.round(n*100)}%`;}
+function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function formLine(team,form){
+  if(!form?.length)return "";
+  return `${escapeHtml(team)}: ${form.map(g=>g.gf>g.ga?"W":g.gf===g.ga?"D":"L").join(" · ")}`;
+}
+const ABJAD_VALUES = {ا:1,أ:1,إ:1,آ:1,ء:1,ب:2,ج:3,د:4,ه:5,ة:5,و:6,ؤ:6,ز:7,ح:8,ط:9,ي:10,ى:10,ئ:10,ك:20,ل:30,م:40,ن:50,س:60,ع:70,ف:80,ص:90,ق:100,ر:200,ش:300,ت:400,ث:500,خ:600,ذ:700,ض:800,ظ:900,غ:1000};
+function toArabicApprox(text){
+ const map={a:'ا',b:'ب',c:'ك',d:'د',e:'ي',f:'ف',g:'ج',h:'ه',i:'ي',j:'ج',k:'ك',l:'ل',m:'م',n:'ن',o:'و',p:'ب',q:'ق',r:'ر',s:'س',t:'ت',u:'و',v:'ف',w:'و',x:'كس',y:'ي',z:'ز'};
+ return String(text||'').toLowerCase().replace(/[^a-z]/g,'').split('').map(c=>map[c]||'').join('');
+}
+function abjadApprox(name){const converted=toArabicApprox(name);let sum=0;for(const ch of converted)sum+=ABJAD_VALUES[ch]||0;return {converted,sum};}
+function sunSign(date){const m=date.getUTCMonth()+1,d=date.getUTCDate();const signs=[['Capricorn',1,1,1,19],['Aquarius',1,20,2,18],['Pisces',2,19,3,20],['Aries',3,21,4,19],['Taurus',4,20,5,20],['Gemini',5,21,6,20],['Cancer',6,21,7,22],['Leo',7,23,8,22],['Virgo',8,23,9,22],['Libra',9,23,10,22],['Scorpio',10,23,11,21],['Sagittarius',11,22,12,21],['Capricorn',12,22,12,31]];for(const [name,sm,sd,em,ed] of signs){if((m===sm&&d>=sd)||(m===em&&d<=ed))return name;}return 'Unknown';}
+function matchKey(m){return String(m.id||`${m.homeTeam?.name}-${m.awayTeam?.name}-${m.utcDate}`)}
+function experimentalPicks(m){
+ const d=m.utcDate?new Date(m.utcDate):new Date();const key=matchKey(m);const details=readDetails()[key]||{};const h=abjadApprox(m.homeTeam?.name||'Home').sum,a=abjadApprox(m.awayTeam?.name||'Away').sum;
+ const dateNum=Number(d.getUTCFullYear()+String(d.getUTCMonth()+1).padStart(2,'0')+String(d.getUTCDate()).padStart(2,'0'));
+ const ast=(d.getUTCDay()+d.getUTCDate()+d.getUTCMonth())%3;const astrologyPick=['Home win','Draw','Away win'][ast];
+ const abj=(h+a+dateNum)%3;const abjadPick=['Home win','Draw','Away win'][abj];return {astrologyPick,abjadPick};
+}
+function manualDetailsForm(m){const key=matchKey(m),d=readDetails()[key]||{};const fields=[['venue','Ground / stadium',m.venue||''],['homeCaptain','Home captain',m.homeTeam?.captain||''],['awayCaptain','Away captain',m.awayTeam?.captain||''],['homeCoach','Home coach',m.homeTeam?.coach||''],['awayCoach','Away coach',m.awayTeam?.coach||''],['referee','Referee',m.referee||m.referees?.map(x=>x.name).join(', ')||''],['homeKit','Home kit colour',m.homeTeam?.kit||''],['awayKit','Away kit colour',m.awayTeam?.kit||'']];
+ return `<details style="margin-top:10px"><summary style="cursor:pointer;color:var(--blue);font-weight:700">Edit missing match details</summary><form class="detailsForm" data-id="${escapeHtml(key)}" style="margin-top:8px">${fields.map(([name,label,auto])=>`<label>${escapeHtml(label)}${auto?' · automatic':''}</label><input name="${name}" value="${escapeHtml(d[name]||auto||'')}" placeholder="Enter if known" style="width:100%;padding:10px;border-radius:9px;background:#081625;color:#edf4ff;border:1px solid #314860">`).join('')}<button class="btn" type="submit" style="margin-top:10px">Save details</button></form></details>`;
+}
+function extraMatchDetails(m){
+ const date=m.utcDate?new Date(m.utcDate):new Date();const weekday=date.toLocaleDateString('en-US',{weekday:'long',timeZone:'UTC'});const sign=sunSign(date);const home=m.homeTeam?.name||m.homeTeam?.shortName||m.homeTeam?.tla||'Home',away=m.awayTeam?.name||m.awayTeam?.shortName||m.awayTeam?.tla||'Away';const h=abjadApprox(home),a=abjadApprox(away);
+ const saved=readDetails()[matchKey(m)]||{};
+ const venue=m.venue||m.ground||m.stadium||m.venueName||m.fixture?.venue||m.fixture?.stadium||saved.venue||null;const homeKit=m.homeTeam?.kit||m.homeTeam?.shirtColor||m.homeTeam?.teamColors||m.homeTeam?.colors||m.homeKit||saved.homeKit||null,awayKit=m.awayTeam?.kit||m.awayTeam?.shirtColor||m.awayTeam?.teamColors||m.awayTeam?.colors||m.awayKit||saved.awayKit||null;
+ const referee=m.referees?.map(x=>x.name||x.fullName).filter(Boolean).join(', ')||m.referee||m.officials?.map(x=>x.name||x.fullName).filter(Boolean).join(', ')||saved.referee||null;
+ const homeCaptain=m.homeTeam?.captain||m.homeCaptain||saved.homeCaptain||null,awayCaptain=m.awayTeam?.captain||m.awayCaptain||saved.awayCaptain||null;
+ const homeCoach=m.homeTeam?.coach||m.homeTeam?.manager||m.homeCoach||m.homeManager||saved.homeCoach||null,awayCoach=m.awayTeam?.coach||m.awayTeam?.manager||m.awayCoach||m.awayManager||saved.awayCoach||null;
+ return `<div class="notice" style="margin-top:10px"><b>Astrology + Abjad (experimental)</b><br>Match day: ${escapeHtml(weekday)} · Date-based sun sign: ${escapeHtml(sign)}<br>Home name Abjad (approx.): ${escapeHtml(h.converted||'—')} = ${h.sum}<br>Away name Abjad (approx.): ${escapeHtml(a.converted||'—')} = ${a.sum}<br>Ground: ${escapeHtml(venue||'Not supplied by available data source')}<br>Referee: ${escapeHtml(referee||'Not supplied by available data source')}<br>Captains: ${escapeHtml(homeCaptain||'Home not supplied by available data source')} / ${escapeHtml(awayCaptain||'Away not supplied by available data source')}<br>Coaches: ${escapeHtml(homeCoach||'Home not supplied by available data source')} / ${escapeHtml(awayCoach||'Away not supplied by available data source')}<br>Kit colours: ${escapeHtml(homeKit||'Home not supplied by available data source')} / ${escapeHtml(awayKit||'Away not supplied by available data source')}<br><span class="mini">Abjad uses the English team name supplied by the feed where available, converted with approximate Latin-to-Arabic transliteration. Different spellings may produce different totals. This is not a validated prediction method.</span></div>`;
+}
+function renderMatches(matches){
+  $("matches").innerHTML="";
+  matches.forEach(m=>{
+    const p=predict(m);
+    const date=m.utcDate?new Date(m.utcDate).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"}):"Date TBC";
+    const comp=m.competition?.name||$("league").selectedOptions[0].textContent;
+    const bestPick=p.home>=p.draw&&p.home>=p.away?"Home win":p.draw>=p.away?"Draw":"Away win";
+    const card=document.createElement("article");card.className="match";
+    card.innerHTML=`
+      <div class="matchtop"><span>${escapeHtml(comp)}</span><span>${escapeHtml(date)}${m.demo?" · DEMO":""}</span></div>
+      <div class="teams"><span>${escapeHtml(m.homeTeam?.name||"Home")}</span><span class="vs">VS</span><span>${escapeHtml(m.awayTeam?.name||"Away")}</span></div>
+      <div class="pick"><div><div class="mini">Most likely exact score</div><div class="score">${p.best.score}</div><div class="mini">${pct(p.best.p)} score probability</div></div><div style="margin-left:auto;text-align:right"><div class="mini">Estimated goals</div><strong>${p.h.toFixed(2)} – ${p.a.toFixed(2)}</strong><div class="mini">Home – Away</div></div></div>
+      <div class="probrow">
+        <div class="prob"><small>HOME WIN</small><strong>${pct(p.home)}</strong><div class="bar"><span style="width:${p.home*100}%"></span></div></div>
+        <div class="prob"><small>DRAW</small><strong>${pct(p.draw)}</strong><div class="bar"><span style="width:${p.draw*100}%"></span></div></div>
+        <div class="prob"><small>AWAY WIN</small><strong>${pct(p.away)}</strong><div class="bar"><span style="width:${p.away*100}%"></span></div></div>
+      </div>
+      <div class="statgrid" style="margin-top:9px">
+        <div class="stat"><strong>${pct(p.btts)}</strong><small>Both teams score · Yes</small></div>
+        <div class="stat"><strong>${pct(p.o25)}</strong><small>Over 2.5 total goals</small></div>
+        <div class="stat"><strong>${pct(p.u25)}</strong><small>Under 2.5 total goals</small></div>
+        <div class="stat"><strong>${pct(p.o15)}</strong><small>Over 1.5 total goals</small></div>
+      </div>
+      <div style="margin-top:10px"><span class="pill">Model lean: ${bestPick}</span> <span class="pill">Data confidence: ${p.confidence}%</span></div>
+      <div style="margin-top:10px"><button class="btn savePrediction" type="button" data-id="${escapeHtml(String(m.id||`${m.homeTeam?.name}-${m.awayTeam?.name}-${m.utcDate}`))}" ${m.demo?"disabled":""}>Save prediction</button></div>
+      <div class="mini" style="margin-top:7px">${m.demo?"Fictional demo data — not a real match prediction":p.sample?`Recent form model · ${p.sample} team-match samples`:"League baseline — recent team history unavailable"}. Confidence reflects data coverage, not guaranteed success.</div>
+      ${extraMatchDetails(m)}
+      <div class="notice"><b>Experimental picks (not evidence-based)</b><br>Astrology heuristic: ${escapeHtml(experimentalPicks(m).astrologyPick)}<br>Abjad heuristic: ${escapeHtml(experimentalPicks(m).abjadPick)}<br><span class="mini">These are simple experimental heuristics for comparison only, not reliable astrological calculations or validated forecasts. Automatic metadata depends on fields supplied by the connected data source; this page does not invent missing facts.</span></div>
+      ${manualDetailsForm(m)}
+      ${p.sample&&m.form?.homeRecent?.length?`<div class="mini" style="margin-top:6px">${formLine(m.homeTeam?.name,m.form.homeRecent)}<br>${formLine(m.awayTeam?.name,m.form.awayRecent)}</div>`:""}`;
+    $("matches").appendChild(card);
+  });
+  updateSummary(matches);
+  document.querySelectorAll(".savePrediction").forEach(btn=>btn.addEventListener("click",()=>{
+    const m=matches.find(x=>String(x.id||`${x.homeTeam?.name}-${x.awayTeam?.name}-${x.utcDate}`)===btn.dataset.id);if(!m||m.demo)return;
+    const p=predict(m), pick=p.home>=p.draw&&p.home>=p.away?"Home win":p.draw>=p.away?"Draw":"Away win";const experimental=experimentalPicks(m);
+    const items=readHistory(), id=String(m.id||`${m.homeTeam?.name}-${m.awayTeam?.name}-${m.utcDate}`);
+    if(items.some(x=>x.id===id)){status("This match prediction is already saved in your history.");return}
+    const score=p.best.score.split(/[–-]/).map(Number);
+    items.push({id,competition:m.competition?.name||$("league").selectedOptions[0].textContent,date:m.utcDate?new Date(m.utcDate).toLocaleString():"Date TBC",home:m.homeTeam?.name||"Home",away:m.awayTeam?.name||"Away",predictedOutcome:pick,astrologyPick:experimental.astrologyPick,abjadPick:experimental.abjadPick,predictedHome:score[0],predictedAway:score[1],predictedAt:new Date().toISOString(),actualHome:null,actualAway:null});
+    writeHistory(items);status("Prediction saved on this device. After the match, enter its final score in the accuracy tracker.");
+  }));
+}
+function updateSummary(matches){
+  if(!matches.length){
+    $("summary").innerHTML='<div class="stat"><strong>0</strong><small>Matches loaded</small></div><div class="stat"><strong>—</strong><small>Average total goals</small></div><div class="stat"><strong>—</strong><small>Home-win lean</small></div><div class="stat"><strong>—</strong><small>BTTS yes lean</small></div>';return;
+  }
+  const ps=matches.map(predict), goals=ps.reduce((s,p)=>s+p.h+p.a,0)/ps.length;
+  $("summary").innerHTML=`<div class="stat"><strong>${matches.length}</strong><small>Matches loaded</small></div><div class="stat"><strong>${goals.toFixed(2)}</strong><small>Average total goals estimate</small></div><div class="stat"><strong>${ps.filter(p=>p.home>p.draw&&p.home>p.away).length}</strong><small>Home-win lean</small></div><div class="stat"><strong>${ps.filter(p=>p.btts>=.5).length}</strong><small>BTTS yes lean</small></div>`;
+}
+renderAccuracy();
+})();
+</script>
+</body>
+</html>
