@@ -22,15 +22,13 @@ exports.handler = async function (event) {
   const allowedPath =
     path.startsWith("/v4/competitions/") ||
     path.startsWith("/v4/teams/");
-
   if (
     !allowedPath ||
     path.includes("..") ||
     path.includes("://") ||
-    path.includes("\\") ||
-    path.includes("?") ||
-    path.includes("#")
+    path.includes("\\")
   ) {
+  
     return {
       statusCode: 400,
       headers,
