@@ -229,8 +229,8 @@ function manualDetailsForm(m){const key=matchKey(m),d=readDetails()[key]||{};con
 }
 function extraMatchDetails(m){
  const date=m.utcDate?new Date(m.utcDate):new Date();const weekday=date.toLocaleDateString('en-US',{weekday:'long',timeZone:'UTC'});const sign=sunSign(date);const home=m.homeTeam?.name||'Home',away=m.awayTeam?.name||'Away';const h=abjadApprox(home),a=abjadApprox(away);
- const venue=m.venue||m.ground||m.stadium||saved.venue||null;
- const saved=readDetails()[matchKey(m)]||{};const homeKit=m.homeTeam?.kit||m.homeTeam?.shirtColor||saved.homeKit||null,awayKit=m.awayTeam?.kit||m.awayTeam?.shirtColor||saved.awayKit||null;
+ const saved=readDetails()[matchKey(m)]||{};
+ const venue=m.venue||m.ground||m.stadium||saved.venue||null;const homeKit=m.homeTeam?.kit||m.homeTeam?.shirtColor||saved.homeKit||null,awayKit=m.awayTeam?.kit||m.awayTeam?.shirtColor||saved.awayKit||null;
  const referee=m.referees?.map(x=>x.name).filter(Boolean).join(', ')||m.referee||saved.referee||null;
  const homeCaptain=m.homeTeam?.captain||saved.homeCaptain||null,awayCaptain=m.awayTeam?.captain||saved.awayCaptain||null;
  const homeCoach=m.homeTeam?.coach||saved.homeCoach||null,awayCoach=m.awayTeam?.coach||saved.awayCoach||null;
