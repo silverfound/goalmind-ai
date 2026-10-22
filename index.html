@@ -17,7 +17,7 @@
 </head>
 <body>
 <div class="wrap">
-<header class="top"><div class="logo">⚽</div><div><div class="brand">GoalMind <span style="color:var(--green)">AI</span></div><div class="sub">Football predictions · statistics + experimental astrology and Abjad</div></div><div class="tag">FORM MODEL V7 · AUTO-DATA EXPERIMENTAL</div></header>
+<header class="top"><div class="logo">⚽</div><div><div class="brand">GoalMind <span style="color:var(--green)">AI</span></div><div class="sub">Football predictions · statistics + experimental astrology and Abjad</div></div><div class="tag">FORM MODEL V8 · TEAM-DATA LOOKUP</div></header>
 <section class="hero">
 <h1>Predict the match.<br><span style="color:var(--green)">Understand the numbers.</span></h1>
 <p>Upcoming fixtures, recent team form, Poisson estimates and a separate experimental Astrology + Abjad panel — never guarantees.</p>
@@ -133,6 +133,22 @@ async function loadMatches(){
     const history=(histData.matches||[]).filter(m=>m.status==="FINISHED"&&Number.isFinite(m.score?.fullTime?.home)&&Number.isFinite(m.score?.fullTime?.away));
     const formMap=buildTeamForm(history);
     const matches=(upData.matches||[]).map(m=>({...m,form:matchForm(m,formMap,history)}));
+    // Fetch team profiles for available club metadata (venue, club colours, coach).
+    // The provider does not supply captains or match referees through this team endpoint.
+    const teamIds=[...new Set(matches.flatMap(m=>[m.homeTeam?.id,m.awayTeam?.id]).filter(id=>id!=null))];
+    const teamDetails={};
+    await Promise.all(teamIds.map(async id=>{
+      try{
+        const r=await fetch(apiUrl(`/v4/teams/${encodeURIComponent(id)}`));
+        if(r.ok){const t=await r.json();teamDetails[id]=t;}
+      }catch(e){ /* Team metadata is optional; predictions should still load. */ }
+    }));
+    matches.forEach(m=>{
+      const ht=teamDetails[m.homeTeam?.id]||{}, at=teamDetails[m.awayTeam?.id]||{};
+      m.homeTeam={...m.homeTeam,venue:ht.venue||m.homeTeam?.venue||null,coach:ht.coach?.name||m.homeTeam?.coach||null,kit:ht.clubColors||m.homeTeam?.kit||null};
+      m.awayTeam={...m.awayTeam,venue:at.venue||m.awayTeam?.venue||null,coach:at.coach?.name||m.awayTeam?.coach||null,kit:at.clubColors||m.awayTeam?.kit||null};
+      m.venue=m.venue||m.homeTeam.venue||null;
+    });
     if(!matches.length){
       $("matches").innerHTML='<div class="empty">No scheduled matches found in this competition/date range. Try another date range or competition.</div>';
       updateSummary([]);status(`History checked: ${history.length} completed results. No upcoming fixtures found in this date range.`);return;
@@ -234,7 +250,7 @@ function extraMatchDetails(m){
  const referee=m.referees?.map(x=>x.name||x.fullName).filter(Boolean).join(', ')||m.referee||m.officials?.map(x=>x.name||x.fullName).filter(Boolean).join(', ')||saved.referee||null;
  const homeCaptain=m.homeTeam?.captain||m.homeCaptain||saved.homeCaptain||null,awayCaptain=m.awayTeam?.captain||m.awayCaptain||saved.awayCaptain||null;
  const homeCoach=m.homeTeam?.coach||m.homeTeam?.manager||m.homeCoach||m.homeManager||saved.homeCoach||null,awayCoach=m.awayTeam?.coach||m.awayTeam?.manager||m.awayCoach||m.awayManager||saved.awayCoach||null;
- return `<div class="notice" style="margin-top:10px"><b>Astrology + Abjad (experimental)</b><br>Match day: ${escapeHtml(weekday)} · Date-based sun sign: ${escapeHtml(sign)}<br>Home name Abjad (approx.): ${escapeHtml(h.converted||'—')} = ${h.sum}<br>Away name Abjad (approx.): ${escapeHtml(a.converted||'—')} = ${a.sum}<br>Ground: ${escapeHtml(venue||'Not supplied by current data feed')}<br>Referee: ${escapeHtml(referee||'Not supplied by current data feed')}<br>Captains: ${escapeHtml(homeCaptain||'Home not supplied')} / ${escapeHtml(awayCaptain||'Away not supplied')}<br>Coaches: ${escapeHtml(homeCoach||'Home not supplied')} / ${escapeHtml(awayCoach||'Away not supplied')}<br>Kit colours: ${escapeHtml(homeKit||'Home not supplied')} / ${escapeHtml(awayKit||'Away not supplied')}<br><span class="mini">Abjad uses the English team name supplied by the feed where available, converted with approximate Latin-to-Arabic transliteration. Different spellings may produce different totals. This is not a validated prediction method.</span></div>`;
+ return `<div class="notice" style="margin-top:10px"><b>Astrology + Abjad (experimental)</b><br>Match day: ${escapeHtml(weekday)} · Date-based sun sign: ${escapeHtml(sign)}<br>Home name Abjad (approx.): ${escapeHtml(h.converted||'—')} = ${h.sum}<br>Away name Abjad (approx.): ${escapeHtml(a.converted||'—')} = ${a.sum}<br>Ground: ${escapeHtml(venue||'Not supplied by available data source')}<br>Referee: ${escapeHtml(referee||'Not supplied by available data source')}<br>Captains: ${escapeHtml(homeCaptain||'Home not supplied by available data source')} / ${escapeHtml(awayCaptain||'Away not supplied by available data source')}<br>Coaches: ${escapeHtml(homeCoach||'Home not supplied by available data source')} / ${escapeHtml(awayCoach||'Away not supplied by available data source')}<br>Kit colours: ${escapeHtml(homeKit||'Home not supplied by available data source')} / ${escapeHtml(awayKit||'Away not supplied by available data source')}<br><span class="mini">Abjad uses the English team name supplied by the feed where available, converted with approximate Latin-to-Arabic transliteration. Different spellings may produce different totals. This is not a validated prediction method.</span></div>`;
 }
 function renderMatches(matches){
   $("matches").innerHTML="";
