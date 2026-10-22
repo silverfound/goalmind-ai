@@ -136,19 +136,38 @@ async function loadMatches(){
     // Fetch team profiles for available club metadata (venue, club colours, coach).
     // The provider does not supply captains or match referees through this team endpoint.
     const teamIds=[...new Set(matches.flatMap(m=>[m.homeTeam?.id,m.awayTeam?.id]).filter(id=>id!=null))];
-    const teamDetails={};
-    await Promise.all(teamIds.map(async id=>{
-      try{
-        const r=await fetch(apiUrl(`/v4/teams/${encodeURIComponent(id)}`));
-        if(r.ok){const t=await r.json();teamDetails[id]=t;}
-      }catch(e){ /* Team metadata is optional; predictions should still load. */ }
-    }));
-    matches.forEach(m=>{
-      const ht=teamDetails[m.homeTeam?.id]||{}, at=teamDetails[m.awayTeam?.id]||{};
-      m.homeTeam={...m.homeTeam,venue:ht.venue||m.homeTeam?.venue||null,coach:ht.coach?.name||m.homeTeam?.coach||null,kit:ht.clubColors||m.homeTeam?.kit||null};
-      m.awayTeam={...m.awayTeam,venue:at.venue||m.awayTeam?.venue||null,coach:at.coach?.name||m.awayTeam?.coach||null,kit:at.clubColors||m.awayTeam?.kit||null};
-      m.venue=m.venue||m.homeTeam.venue||null;
-    });
+const teamDetails={};
+
+await Promise.all(teamIds.map(async id=>{
+  try{
+    const r=await fetch(apiUrl(`/v4/teams/${encodeURIComponent(id)}`));
+    if(r.ok){
+      const t=await r.json();
+      teamDetails[id]=t;
+    }
+  }catch(e){}
+}));
+
+matches.forEach(m=>{
+  const ht=teamDetails[m.homeTeam?.id]||{};
+  const at=teamDetails[m.awayTeam?.id]||{};
+
+  m.homeTeam={
+    ...m.homeTeam,
+    venue:ht.venue||m.homeTeam?.venue||null,
+    coach:ht.coach?.name||m.homeTeam?.coach||null,
+    kit:ht.clubColors||m.homeTeam?.kit||null
+  };
+
+  m.awayTeam={
+    ...m.awayTeam,
+    venue:at.venue||m.awayTeam?.venue||null,
+    coach:at.coach?.name||m.awayTeam?.coach||null,
+    kit:at.clubColors||m.awayTeam?.kit||null
+  };
+
+  m.venue=m.venue||m.homeTeam.venue||null;
+});
     if(!matches.length){
       $("matches").innerHTML='<div class="empty">No scheduled matches found in this competition/date range. Try another date range or competition.</div>';
       updateSummary([]);status(`History checked: ${history.length} completed results. No upcoming fixtures found in this date range.`);return;
