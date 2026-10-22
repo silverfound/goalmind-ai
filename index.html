@@ -4,173 +4,212 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#081321">
-<title>GoalMind — Football Prediction AI</title>
+<meta name="description" content="GoalMind AI estimates football match outcomes using recent results and a Poisson score model.">
+<title>GoalMind AI — Football Predictions</title>
 <style>
 :root{--bg:#07111f;--panel:#101e30;--panel2:#14263b;--text:#edf4ff;--muted:#9bb0c9;--green:#41e0a0;--blue:#70a7ff;--gold:#ffd166;--red:#ff7185;--line:#263a52}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% -10%,#173657 0,#07111f 42%);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-.wrap{max-width:920px;margin:auto;padding:18px 14px 44px}.top{display:flex;gap:12px;align-items:center;margin:6px 0 18px}.logo{width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#41e0a0,#70a7ff);display:grid;place-items:center;color:#07111f;font-size:25px;font-weight:900}.brand{font-size:23px;font-weight:850;letter-spacing:-.6px}.sub{color:var(--muted);font-size:12px}.tag{margin-left:auto;border:1px solid #2b4962;border-radius:999px;padding:6px 10px;color:var(--green);font-size:11px;font-weight:700}
-.hero{background:linear-gradient(135deg,#142a40,#102034);border:1px solid #29435b;border-radius:22px;padding:20px;margin-bottom:14px}.hero h1{font-size:25px;line-height:1.12;margin:0 0 9px}.hero p{color:var(--muted);margin:0 0 14px}.row{display:flex;gap:10px;flex-wrap:wrap}.btn{border:0;border-radius:12px;padding:12px 15px;font-weight:800;cursor:pointer;background:var(--green);color:#061321}.btn.secondary{background:#20344b;color:var(--text);border:1px solid #36516b}.btn:disabled{opacity:.5}
-.grid{display:grid;grid-template-columns:1fr;gap:14px}.card{background:rgba(16,30,48,.94);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}.card h2{font-size:17px;margin:0 0 12px}.muted{color:var(--muted)}label{display:block;color:#c8d7e8;font-size:12px;margin:10px 0 5px}input,select{width:100%;padding:12px;border:1px solid #314860;border-radius:11px;background:#081625;color:var(--text);font:inherit}input::placeholder{color:#6f859d}.fieldgrid{display:grid;grid-template-columns:1fr;gap:8px}.notice{border-left:3px solid var(--gold);padding:10px 12px;background:#2b291d;color:#e9dfbb;border-radius:8px;font-size:12px}.status{margin-top:10px;color:var(--muted);font-size:12px;overflow-wrap:anywhere}.matches{display:grid;gap:10px}.match{border:1px solid #2a4057;background:#0b1929;border-radius:14px;padding:13px}.matchtop{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:11px;margin-bottom:10px}.teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;font-weight:800}.teams span:last-child{text-align:right}.vs{color:var(--muted);font-size:11px}.pick{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid #26394e}.score{font-size:21px;font-weight:900;color:var(--green)}.mini{font-size:11px;color:var(--muted)}.pill{border-radius:999px;padding:4px 8px;font-size:11px;background:#20344b;color:#cbd9e8}.statgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.stat{background:#0a1929;border:1px solid #263a50;border-radius:12px;padding:12px}.stat strong{display:block;font-size:20px}.stat small{color:var(--muted)}.empty{padding:20px;text-align:center;color:var(--muted);border:1px dashed #30465c;border-radius:13px}.footer{color:#7f94ab;font-size:11px;text-align:center;margin-top:20px}.hidden{display:none!important}
-@media(min-width:680px){.fieldgrid{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr 1fr}.wide{grid-column:1/-1}.hero h1{font-size:32px}.matches{grid-template-columns:1fr 1fr}}
+.wrap{max-width:1040px;margin:auto;padding:18px 14px 44px}.top{display:flex;gap:12px;align-items:center;margin:6px 0 18px}.logo{width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#41e0a0,#70a7ff);display:grid;place-items:center;color:#07111f;font-size:25px;font-weight:900}.brand{font-size:23px;font-weight:850;letter-spacing:-.6px}.sub{color:var(--muted);font-size:12px}.tag{margin-left:auto;border:1px solid #2b4962;border-radius:999px;padding:6px 10px;color:var(--green);font-size:11px;font-weight:700}
+.hero{background:linear-gradient(135deg,#142a40,#102034);border:1px solid #29435b;border-radius:22px;padding:20px;margin-bottom:14px}.hero h1{font-size:25px;line-height:1.12;margin:0 0 9px}.hero p{color:var(--muted);margin:0 0 14px}.row{display:flex;gap:10px;flex-wrap:wrap}.btn{border:0;border-radius:12px;padding:12px 15px;font-weight:800;cursor:pointer;background:var(--green);color:#061321}.btn.secondary{background:#20344b;color:var(--text);border:1px solid #36516b}.btn:disabled{opacity:.5;cursor:wait}
+.card{background:rgba(16,30,48,.94);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}.card h2{font-size:17px;margin:0 0 12px}.muted{color:var(--muted)}label{display:block;color:#c8d7e8;font-size:12px;margin:10px 0 5px}select{width:100%;padding:12px;border:1px solid #314860;border-radius:11px;background:#081625;color:var(--text);font:inherit}.fieldgrid{display:grid;grid-template-columns:1fr;gap:8px}.status{margin-top:10px;color:var(--muted);font-size:12px;overflow-wrap:anywhere}.matches{display:grid;gap:10px}.match{border:1px solid #2a4057;background:#0b1929;border-radius:14px;padding:14px}.matchtop{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-bottom:10px}.teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;font-weight:800}.teams span:last-child{text-align:right}.vs{color:var(--muted);font-size:11px}.pick{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid #26394e}.score{font-size:24px;font-weight:900;color:var(--green)}.mini{font-size:11px;color:var(--muted)}.pill{display:inline-block;border-radius:999px;padding:4px 8px;font-size:11px;background:#20344b;color:#cbd9e8}.statgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat{background:#0a1929;border:1px solid #263a50;border-radius:12px;padding:11px}.stat strong{display:block;font-size:19px}.stat small{color:var(--muted)}.probrow{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}.prob{background:#13283d;border-radius:9px;padding:8px;text-align:center}.prob strong{display:block;font-size:17px}.prob small{font-size:10px;color:var(--muted)}.bar{height:6px;border-radius:9px;background:#263a50;overflow:hidden;margin-top:7px}.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--green))}.empty{padding:20px;text-align:center;color:var(--muted);border:1px dashed #30465c;border-radius:13px}.notice{border-left:3px solid var(--gold);padding:10px 12px;background:#2b291d;color:#e9dfbb;border-radius:8px;font-size:12px;margin-top:12px}.footer{color:#7f94ab;font-size:11px;text-align:center;margin-top:20px}
+@media(min-width:680px){.fieldgrid{grid-template-columns:1fr 1fr}.hero h1{font-size:32px}.matches{grid-template-columns:1fr 1fr}.statgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header class="top"><div class="logo">⚽</div><div><div class="brand">GoalMind <span style="color:var(--green)">AI</span></div><div class="sub">Football predictions · stats-powered estimates</div></div><div class="tag">FORM MODEL V2</div></header>
-  <section class="hero">
-    <h1>Predict the match.<br><span style="color:var(--green)">Understand the numbers.</span></h1>
-    <p>Live fixtures + recent completed results feed a form-based Poisson model. Predictions are estimates, never guarantees.</p>
-    <div class="row"><button class="btn" id="loadBtn">Load upcoming matches</button><button class="btn secondary" id="demoBtn">Try demo mode</button></div>
-    <div class="status" id="status">Ready to load live matches. Select a competition and date range, then tap Load upcoming matches.</div>
-  
-  </section>
-  <section class="card">
-    <h2>2 · Choose league and date range</h2>
-    <div class="fieldgrid">
-      <div><label for="league">Competition</label><select id="league"><option value="PL">Premier League (England)</option><option value="ELC">Championship (England)</option><option value="PD">La Liga (Spain)</option><option value="BL1">Bundesliga (Germany)</option><option value="SA">Serie A (Italy)</option><option value="FL1">Ligue 1 (France)</option><option value="CL">Champions League</option><option value="EL">Europa League</option><option value="DED">Eredivisie (Netherlands)</option><option value="PPL">Primeira Liga (Portugal)</option><option value="BSA">Brasileirão (Brazil)</option><option value="EC">European Championship</option><option value="WC">World Cup</option></select></div>
-      
-      <div><label for="days">Upcoming days</label><select id="days"><option value="7">Next 7 days</option><option value="3">Next 3 days</option><option value="14">Next 14 days</option></select></div>
-    </div>
-    <div class="status">Competition coverage depends on your API plan. If a league is unavailable, try another competition or demo mode.</div>
-  </section>
-  <section class="card">
-    <h2>3 · Match predictions</h2>
-    <div class="statgrid" id="summary">
-      <div class="stat"><strong>—</strong><small>Matches loaded</small></div><div class="stat"><strong>—</strong><small>Average goals estimate</small></div>
-      <div class="stat"><strong>—</strong><small>Home win picks</small></div><div class="stat"><strong>—</strong><small>BTTS yes picks</small></div>
-    </div>
-    <div id="matches" class="matches" style="margin-top:12px"><div class="empty">No matches yet. Tap “Load upcoming matches” or try demo mode.</div></div>
-  </section>
-  <section class="card">
-    <h2>How the starter model works</h2>
-    <p class="muted" style="font-size:13px">Version 2 uses recent completed matches from the selected competition to estimate each team’s goals scored/conceded and recent form, blends those with league averages, then applies a Poisson score model for 1X2, likely scores, over/under and BTTS. If there is insufficient team history, it clearly falls back toward a league baseline. It does not include confirmed lineups, injuries, tactics, weather or bookmaker odds.</p>
-  </section>
-  <div class="footer">GoalMind AI · Unofficial fan-made tool · Verify fixtures and team news before kickoff · No guaranteed predictions</div>
+<header class="top"><div class="logo">⚽</div><div><div class="brand">GoalMind <span style="color:var(--green)">AI</span></div><div class="sub">Football predictions · stats-powered estimates</div></div><div class="tag">FORM MODEL V3</div></header>
+<section class="hero">
+<h1>Predict the match.<br><span style="color:var(--green)">Understand the numbers.</span></h1>
+<p>Upcoming fixtures, recent team form and a Poisson score model — presented as probabilities, not guarantees.</p>
+<div class="row"><button class="btn" id="loadBtn">Load upcoming matches</button><button class="btn secondary" id="demoBtn">Try demo mode</button></div>
+<div class="status" id="status">Choose a competition and date range, then load matches.</div>
+</section>
+<section class="card">
+<h2>1 · Choose league and date range</h2>
+<div class="fieldgrid">
+<div><label for="league">Competition</label><select id="league">
+<option value="PL">Premier League (England)</option><option value="ELC">Championship (England)</option><option value="PD">La Liga (Spain)</option><option value="BL1">Bundesliga (Germany)</option><option value="SA">Serie A (Italy)</option><option value="FL1">Ligue 1 (France)</option><option value="CL">Champions League</option><option value="EL">Europa League</option><option value="DED">Eredivisie (Netherlands)</option><option value="PPL">Primeira Liga (Portugal)</option><option value="BSA">Brasileirão (Brazil)</option><option value="EC">European Championship</option><option value="WC">World Cup</option>
+</select></div>
+<div><label for="days">Upcoming days</label><select id="days"><option value="7">Next 7 days</option><option value="3">Next 3 days</option><option value="14">Next 14 days</option></select></div>
+</div>
+<div class="status">Competition and historical-data coverage depends on your football-data.org API plan. Europa League may return HTTP 403 if it is not included.</div>
+</section>
+<section class="card">
+<h2>2 · Prediction dashboard</h2>
+<div class="statgrid" id="summary">
+<div class="stat"><strong>—</strong><small>Matches loaded</small></div><div class="stat"><strong>—</strong><small>Average total goals</small></div><div class="stat"><strong>—</strong><small>Home-win lean</small></div><div class="stat"><strong>—</strong><small>BTTS yes lean</small></div>
+</div>
+<div id="matches" class="matches" style="margin-top:12px"><div class="empty">No matches yet. Load live matches or try demo mode.</div></div>
+</section>
+<section class="card">
+<h2>How the model works</h2>
+<p class="muted" style="font-size:13px">The model blends each team's recent scoring and conceding rates with competition averages, applies a small home advantage, and uses a Poisson score matrix to estimate 1X2, likely scores, Over/Under 2.5 and Both Teams To Score. Confidence describes data coverage and sample size — it is not the probability that a pick will win. The model does not currently use confirmed lineups, injuries, tactics, weather or bookmaker odds.</p>
+<div class="notice">Predictions are statistical estimates, not guaranteed results. Exact-score probabilities are naturally much lower than 1X2 probabilities. Demo mode uses fictional sample teams and is not live data.</div>
+</section>
+<div class="footer">GoalMind AI · Unofficial fan-made tool · Check team news before kickoff · No guaranteed predictions</div>
 </div>
 <script>
 (() => {
-  
-  const $ = id => document.getElementById(id);
-  const status = (msg, bad=false) => { $("status").textContent=msg; $("status").style.color=bad?"#ff9baa":"#9bb0c9"; };
-  
-  
-  $("loadBtn").addEventListener("click",loadMatches);
-  $("demoBtn").addEventListener("click",()=>{renderMatches(demoMatches());status("Demo mode: sample fixtures and sample stats only — not live fixtures.");});
-  const demoMatches=()=>[
-    {utcDate:new Date(Date.now()+86400000).toISOString(),homeTeam:{name:"Northbridge FC"},awayTeam:{name:"Riverside United"},demo:true,form:{hg:1.7,ha:1.0,ag:1.2,aa:1.4}},
-    {utcDate:new Date(Date.now()+2*86400000).toISOString(),homeTeam:{name:"Metro Athletic"},awayTeam:{name:"Coastal Town"},demo:true,form:{hg:1.5,ha:0.9,ag:0.9,aa:1.3}},
-    {utcDate:new Date(Date.now()+3*86400000).toISOString(),homeTeam:{name:"Red City"},awayTeam:{name:"Blue County"},demo:true,form:{hg:1.4,ha:1.4,ag:1.5,aa:1.2}}
+const $ = id => document.getElementById(id);
+const status = (msg, bad=false) => { $("status").textContent=msg; $("status").style.color=bad?"#ff9baa":"#9bb0c9"; };
+$("loadBtn").addEventListener("click", loadMatches);
+$("demoBtn").addEventListener("click", () => {
+  renderMatches(demoMatches());
+  status("Demo mode: fictional sample fixtures and sample stats only — not live fixtures.");
+});
+function demoMatches(){
+  return [
+    {utcDate:new Date(Date.now()+86400000).toISOString(),homeTeam:{name:"Northbridge FC"},awayTeam:{name:"Riverside United"},demo:true,form:{hg:1.7,ha:1.0,ag:1.2,aa:1.4,sampleSize:12,homeRecent:[],awayRecent:[]}},
+    {utcDate:new Date(Date.now()+286400000).toISOString(),homeTeam:{name:"Metro Athletic"},awayTeam:{name:"Coastal Town"},demo:true,form:{hg:1.5,ha:0.9,ag:0.9,aa:1.3,sampleSize:10,homeRecent:[],awayRecent:[]}},
+    {utcDate:new Date(Date.now()+386400000).toISOString(),homeTeam:{name:"Red City"},awayTeam:{name:"Blue County"},demo:true,form:{hg:1.4,ha:1.4,ag:1.5,aa:1.2,sampleSize:4,homeRecent:[],awayRecent:[]}}
   ];
-  async function loadMatches(){
-    
-    const comp=$("league").value, days=Number($("days").value);
-    const now=new Date(), to=new Date(Date.now()+days*86400000), historyFrom=new Date(Date.now()-120*86400000);
-    const fmt=d=>d.toISOString().slice(0,10);
-    status("Loading upcoming fixtures and the last 120 days of results…");
-    $("loadBtn").disabled=true;
-    try{
-      
-      const upcomingUrl=`https://api.football-data.org/v4/competitions/${encodeURIComponent(comp)}/matches?dateFrom=${fmt(now)}&dateTo=${fmt(to)}&status=SCHEDULED`;
-      const historyUrl=`https://api.football-data.org/v4/competitions/${encodeURIComponent(comp)}/matches?dateFrom=${fmt(historyFrom)}&dateTo=${fmt(now)}&status=FINISHED`;
-      const explain=(res)=>{let msg=`API returned HTTP ${res.status}.`;if(res.status===401)msg+=" Server token missing or invalid. Please check the Netlify environment variable.";if(res.status===403)msg+=" This competition or historical data may not be included in your API plan.";if(res.status===429)msg+=" API request limit may have been reached; wait a minute and retry.";return msg;};
-      let upRes;
-      try { upRes=await fetch('/.netlify/functions/football-data?path='+encodeURIComponent(new URL(upcomingUrl).pathname+new URL(upcomingUrl).search)); }
-      catch(e) { throw new Error("Could not connect to the upcoming-matches API from this browser (network/CORS/browser restriction). Try Chrome, turn off ad-blocking/private DNS if enabled, or retry later. Technical detail: "+(e?.message||"fetch failed")); }
-      if(!upRes.ok)throw new Error(explain(upRes));
-      let upData;
-      try { upData=await upRes.json(); } catch(e) { throw new Error("Upcoming-matches API responded, but its data could not be read as JSON."); }
-      let histRes;
-      try { histRes=await fetch('/.netlify/functions/football-data?path='+encodeURIComponent(new URL(historyUrl).pathname+new URL(historyUrl).search)); }
-      catch(e) { throw new Error("Upcoming matches API worked, but the recent-results API request failed (network/CORS/browser restriction). Try again later. Technical detail: "+(e?.message||"fetch failed")); }
-      if(!histRes.ok)throw new Error("Upcoming fixtures loaded, but recent results could not be loaded. "+explain(histRes)+" Try again later; model may lack recent form.");
-      let histData;
-      try { histData=await histRes.json(); } catch(e) { throw new Error("Recent-results API responded, but its data could not be read as JSON."); }
-      const history=(histData.matches||[]).filter(m=>m.status==="FINISHED"&&Number.isFinite(m.score?.fullTime?.home)&&Number.isFinite(m.score?.fullTime?.away));
-      const formMap=buildTeamForm(history);
-      const matches=(upData.matches||[]).map(m=>({...m,form:matchForm(m,formMap,history)}));
-      if(!matches.length){$("matches").innerHTML='<div class="empty">No scheduled matches found in this competition/date range. Try another league or date range.</div>';updateSummary([]);status(`History checked: ${history.length} completed matches. No upcoming fixtures found in selected range.`);return;}
-      const usable=matches.filter(m=>m.form?.sampleSize>0).length;
-      status(`Loaded ${matches.length} fixtures + ${history.length} completed results. Recent form available for ${usable} fixtures. Predictions are estimates, not guarantees.`);
-      renderMatches(matches);
-    }catch(e){status(e.message+" Check Netlify configuration, internet connection and competition coverage.",true);}
-    finally{$("loadBtn").disabled=false;}
-  }
-  function buildTeamForm(history){
-    const map={};
-    history.sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate)).forEach(m=>{
-      const hg=m.score.fullTime.home, ag=m.score.fullTime.away;
-      [[m.homeTeam?.id,m.homeTeam?.name,hg,ag,true],[m.awayTeam?.id,m.awayTeam?.name,ag,hg,false]].forEach(([id,name,gf,ga,isHome])=>{
-        if(id==null)return;
-        if(!map[id])map[id]={id,name,games:[],homeFor:[],homeAgainst:[],awayFor:[],awayAgainst:[],forGoals:[],againstGoals:[],points:[]};
-        const t=map[id];t.games.push({gf,ga,isHome,date:m.utcDate});t.forGoals.push(gf);t.againstGoals.push(ga);t.points.push(gf>ga?3:gf===ga?1:0);
-        if(isHome){t.homeFor.push(gf);t.homeAgainst.push(ga);}else{t.awayFor.push(gf);t.awayAgainst.push(ga);}
-      });
+}
+const fmt = d => d.toISOString().slice(0,10);
+function apiUrl(path){
+  return '/.netlify/functions/football-data?path='+encodeURIComponent(path);
+}
+function apiError(res){
+  let msg=`API returned HTTP ${res.status}.`;
+  if(res.status===401) msg+=" The server token may be missing or invalid; check the Netlify FOOTBALL_DATA_TOKEN environment variable.";
+  if(res.status===403) msg+=" This competition or historical data may not be included in your API plan.";
+  if(res.status===429) msg+=" The API request limit may have been reached; wait and retry.";
+  return msg;
+}
+async function loadMatches(){
+  const comp=$("league").value, days=Number($("days").value);
+  const now=new Date(), to=new Date(Date.now()+days*86400000), historyFrom=new Date(Date.now()-120*86400000);
+  status("Loading upcoming fixtures and recent results…");
+  $("loadBtn").disabled=true;
+  try{
+    const upcomingPath=`/v4/competitions/${encodeURIComponent(comp)}/matches?dateFrom=${fmt(now)}&dateTo=${fmt(to)}&status=SCHEDULED`;
+    const historyPath=`/v4/competitions/${encodeURIComponent(comp)}/matches?dateFrom=${fmt(historyFrom)}&dateTo=${fmt(now)}&status=FINISHED`;
+    let upRes;
+    try{upRes=await fetch(apiUrl(upcomingPath));}catch(e){throw new Error("Could not connect to the Netlify matches function. Check your internet connection and try again.");}
+    if(!upRes.ok) throw new Error(apiError(upRes));
+    let upData;
+    try{upData=await upRes.json();}catch(e){throw new Error("Upcoming-matches response was not valid JSON.");}
+    let histRes;
+    try{histRes=await fetch(apiUrl(historyPath));}catch(e){throw new Error("Fixtures loaded, but the recent-results request failed. Please retry.");}
+    if(!histRes.ok) throw new Error("Recent results could not be loaded. "+apiError(histRes));
+    let histData;
+    try{histData=await histRes.json();}catch(e){throw new Error("Recent-results response was not valid JSON.");}
+    const history=(histData.matches||[]).filter(m=>m.status==="FINISHED"&&Number.isFinite(m.score?.fullTime?.home)&&Number.isFinite(m.score?.fullTime?.away));
+    const formMap=buildTeamForm(history);
+    const matches=(upData.matches||[]).map(m=>({...m,form:matchForm(m,formMap,history)}));
+    if(!matches.length){
+      $("matches").innerHTML='<div class="empty">No scheduled matches found in this competition/date range. Try another date range or competition.</div>';
+      updateSummary([]);status(`History checked: ${history.length} completed results. No upcoming fixtures found in this date range.`);return;
+    }
+    const usable=matches.filter(m=>(m.form?.sampleSize||0)>0).length;
+    renderMatches(matches);
+    status(`Loaded ${matches.length} fixtures and ${history.length} completed results. Recent form available for ${usable} fixtures. Probabilities are estimates, not guarantees.`);
+  }catch(e){status(e.message+" Check Netlify configuration, internet connection and competition coverage.",true);}
+  finally{$("loadBtn").disabled=false;}
+}
+function buildTeamForm(history){
+  const map={};
+  history.slice().sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate)).forEach(m=>{
+    const hg=m.score.fullTime.home, ag=m.score.fullTime.away;
+    [[m.homeTeam?.id,m.homeTeam?.name,hg,ag,true],[m.awayTeam?.id,m.awayTeam?.name,ag,hg,false]].forEach(([id,name,gf,ga,isHome])=>{
+      if(id==null)return;
+      if(!map[id])map[id]={id,name,games:[],homeFor:[],homeAgainst:[],awayFor:[],awayAgainst:[],forGoals:[],againstGoals:[],points:[]};
+      const t=map[id];t.games.push({gf,ga,isHome,date:m.utcDate});t.forGoals.push(gf);t.againstGoals.push(ga);t.points.push(gf>ga?3:gf===ga?1:0);
+      if(isHome){t.homeFor.push(gf);t.homeAgainst.push(ga);}else{t.awayFor.push(gf);t.awayAgainst.push(ga);}
     });
-    return map;
-  }
-  const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
-  function matchForm(m,map,history){
-    const home=map[m.homeTeam?.id],away=map[m.awayTeam?.id];
-    const recent=(t)=>t?.games.slice(-6)||[];
-    const h=recent(home),a=recent(away);
-    const allHome=history.map(x=>x.score.fullTime.home).filter(Number.isFinite);
-    const allAway=history.map(x=>x.score.fullTime.away).filter(Number.isFinite);
-    const leagueHome=avg(allHome)||1.5,leagueAway=avg(allAway)||1.15;
-    const homeAttack=avg(h.map(g=>g.isHome?g.gf:g.gf));
-    const homeConcede=avg(h.map(g=>g.ga));
-    const awayAttack=avg(a.map(g=>g.gf));
-    const awayConcede=avg(a.map(g=>g.ga));
-    // Blend team form with league averages to avoid overreacting to tiny samples.
-    const blend=(v,base,n)=>v==null?base:(v*n+base*3)/(n+3);
-    const hGF=blend(homeAttack,leagueHome,h.length), hGA=blend(homeConcede,leagueAway,h.length);
-    const aGF=blend(awayAttack,leagueAway,a.length), aGA=blend(awayConcede,leagueHome,a.length);
-    const hHome=avg(home?.homeFor.slice(-4)||[]), aAway=avg(away?.awayFor.slice(-4)||[]);
-    const hHomeCon=avg(home?.homeAgainst.slice(-4)||[]), aAwayCon=avg(away?.awayAgainst.slice(-4)||[]);
-    const expectedHome=0.58*blend(hHome, hGF, hHome==null?0:4)+0.42*0.5*(hGF+aGA);
-    const expectedAway=0.58*blend(aAway, aGF, aAway==null?0:4)+0.42*0.5*(aGF+hGA);
-    return {hg:clamp(expectedHome*1.06,0.2,3.5),ha:clamp(hGA,0.2,3.2),ag:clamp(expectedAway*0.94,0.2,3.2),aa:clamp(aGA,0.2,3.5),sampleSize:h.length+a.length,homeRecent:h,awayRecent:a,homePoints:avg(home?.points.slice(-5)||[]),awayPoints:avg(away?.points.slice(-5)||[])};
-  }
-  function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
-  function poisson(k,lam){let p=Math.exp(-lam),sum=p;for(let i=1;i<=k;i++){p*=lam/i;sum=p;}return p;}
-  function predict(m){
-    // Demo stats are illustrative. Live fixtures use a modest baseline until historical form is connected.
-    let h,a;
-    if(m.form){h=(m.form.hg+m.form.aa)/2; a=(m.form.ag+m.form.ha)/2;}
-    else {h=1.45;a=1.15;}
-    h=Math.max(.25,Math.min(3.2,h));a=Math.max(.2,Math.min(3,a));
-    let home=0,draw=0,away=0,btts=0,o15=0,o25=0,best={score:"1–1",p:0};
-    for(let i=0;i<=6;i++)for(let j=0;j<=6;j++){
-      const p=poisson(i,h)*poisson(j,a);
+  });
+  return map;
+}
+const avg=a=>a&&a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+function matchForm(m,map,history){
+  const home=map[m.homeTeam?.id], away=map[m.awayTeam?.id];
+  const recent=t=>t?.games.slice(-6)||[];
+  const h=recent(home), a=recent(away);
+  const allHome=history.map(x=>x.score.fullTime.home).filter(Number.isFinite);
+  const allAway=history.map(x=>x.score.fullTime.away).filter(Number.isFinite);
+  const leagueHome=avg(allHome)||1.5, leagueAway=avg(allAway)||1.15;
+  const hGF=avg(h.map(g=>g.gf)), hGA=avg(h.map(g=>g.ga));
+  const aGF=avg(a.map(g=>g.gf)), aGA=avg(a.map(g=>g.ga));
+  const blend=(value,base,n)=>value==null?base:(value*n+base*3)/(n+3);
+  const homeFor=avg(home?.homeFor.slice(-4)||[]), awayFor=avg(away?.awayFor.slice(-4)||[]);
+  const homeCon=avg(home?.homeAgainst.slice(-4)||[]), awayCon=avg(away?.awayAgainst.slice(-4)||[]);
+  const hAttack=blend(hGF,leagueHome,h.length), hDef=blend(hGA,leagueAway,h.length);
+  const aAttack=blend(aGF,leagueAway,a.length), aDef=blend(aGA,leagueHome,a.length);
+  const hHome=blend(homeFor,hAttack,homeFor==null?0:4), aAway=blend(awayFor,aAttack,awayFor==null?0:4);
+  const hHomeCon=blend(homeCon,hDef,homeCon==null?0:4), aAwayCon=blend(awayCon,aDef,awayCon==null?0:4);
+  const expectedHome=0.58*((hHome+aAwayCon)/2)+0.42*((hAttack+aDef)/2)+0.12;
+  const expectedAway=0.58*((aAway+hHomeCon)/2)+0.42*((aAttack+hDef)/2);
+  return {hg:clamp(expectedHome,0.2,3.5),ha:clamp(hDef,0.2,3.2),ag:clamp(expectedAway,0.2,3.2),aa:clamp(aDef,0.2,3.5),sampleSize:h.length+a.length,homeRecent:h,awayRecent:a,homePoints:avg(home?.points.slice(-5)||[]),awayPoints:avg(away?.points.slice(-5)||[])};
+}
+function poisson(k,lambda){
+  let p=Math.exp(-lambda);
+  for(let i=1;i<=k;i++)p*=lambda/i;
+  return p;
+}
+function predict(m){
+  const f=m.form||{};
+  const h=clamp(Number.isFinite(f.hg)?(f.hg+f.aa)/2:1.48,0.2,3.3);
+  const a=clamp(Number.isFinite(f.ag)?(f.ag+f.ha)/2:1.15,0.2,3.1);
+  let home=0,draw=0,away=0,btts=0,o15=0,o25=0,u25=0,best={score:"1–1",p:0};
+  const matrix=[];
+  for(let i=0;i<=7;i++){
+    matrix[i]=[];
+    for(let j=0;j<=7;j++){
+      const p=poisson(i,h)*poisson(j,a);matrix[i][j]=p;
       if(i>j)home+=p;else if(i===j)draw+=p;else away+=p;
-      if(i>0&&j>0)btts+=p;if(i+j>=2)o15+=p;if(i+j>=3)o25+=p;
+      if(i>0&&j>0)btts+=p;if(i+j>=2)o15+=p;if(i+j>=3)o25+=p;if(i+j<=2)u25+=p;
       if(p>best.p)best={score:`${i}–${j}`,p};
     }
-    const total=home+draw+away;home/=total;draw/=total;away/=total;
-    return {h,a,home,draw,away,btts,o15,o25,best};
   }
-  function pct(n){return Math.round(n*100)+"%";}
-  function renderMatches(matches){
-    $("matches").innerHTML="";
-    matches.forEach(m=>{
-      const p=predict(m);
-      const date=m.utcDate?new Date(m.utcDate).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"}):"Date TBC";
-      const card=document.createElement("article");card.className="match";
-      card.innerHTML=`<div class="matchtop"><span>${escapeHtml(m.competition?.name||$("league").selectedOptions[0].textContent)}</span><span>${escapeHtml(date)}${m.demo?' · DEMO':''}</span></div>
+  const total=home+draw+away;
+  home/=total;draw/=total;away/=total;
+  const sample=f.sampleSize||0;
+  const confidence=sample>=10?Math.min(82,58+sample):sample>=4?Math.min(68,45+sample*2):38;
+  return {h,a,home,draw,away,btts,o15,o25,u25,best,confidence,sample};
+}
+function pct(n){return `${Math.round(n*100)}%`;}
+function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function formLine(team,form){
+  if(!form?.length)return "";
+  return `${escapeHtml(team)}: ${form.map(g=>g.gf>g.ga?"W":g.gf===g.ga?"D":"L").join(" · ")}`;
+}
+function renderMatches(matches){
+  $("matches").innerHTML="";
+  matches.forEach(m=>{
+    const p=predict(m);
+    const date=m.utcDate?new Date(m.utcDate).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"}):"Date TBC";
+    const comp=m.competition?.name||$("league").selectedOptions[0].textContent;
+    const bestPick=p.home>=p.draw&&p.home>=p.away?"Home win":p.draw>=p.away?"Draw":"Away win";
+    const card=document.createElement("article");card.className="match";
+    card.innerHTML=`
+      <div class="matchtop"><span>${escapeHtml(comp)}</span><span>${escapeHtml(date)}${m.demo?" · DEMO":""}</span></div>
       <div class="teams"><span>${escapeHtml(m.homeTeam?.name||"Home")}</span><span class="vs">VS</span><span>${escapeHtml(m.awayTeam?.name||"Away")}</span></div>
-      <div class="pick"><div><div class="mini">Top score estimate</div><div class="score">${p.best.score}</div></div><div style="margin-left:auto;text-align:right"><div class="mini">Home / Draw / Away</div><strong>${pct(p.home)} / ${pct(p.draw)} / ${pct(p.away)}</strong></div></div>
-      <div class="statgrid" style="margin-top:10px"><div class="stat"><strong>${p.h.toFixed(2)} – ${p.a.toFixed(2)}</strong><small>Expected goals estimate</small></div><div class="stat"><strong>${pct(p.btts)}</strong><small>Both teams to score</small></div><div class="stat"><strong>${pct(p.o15)}</strong><small>Over 1.5 goals</small></div><div class="stat"><strong>${pct(p.o25)}</strong><small>Over 2.5 goals</small></div></div>
-      <div class="mini" style="margin-top:9px">Exact-score probability: ${pct(p.best.p)} · ${m.demo?"Sample demo stats":m.form?.sampleSize?`Recent form model · ${m.form.sampleSize} team-match samples`:"League baseline — recent team history unavailable"}</div>
-      ${m.form?.homeRecent?`<div class="mini" style="margin-top:5px">Recent six: ${escapeHtml(m.homeTeam?.name||"Home")} ${m.form.homeRecent.map(g=>g.gf>g.ga?"W":g.gf===g.ga?"D":"L").join(" ")} · ${escapeHtml(m.awayTeam?.name||"Away")} ${m.form.awayRecent.map(g=>g.gf>g.ga?"W":g.gf===g.ga?"D":"L").join(" ")}</div>`:""}`;
-      $("matches").appendChild(card);
-    });
-    updateSummary(matches);
+      <div class="pick"><div><div class="mini">Most likely exact score</div><div class="score">${p.best.score}</div><div class="mini">${pct(p.best.p)} score probability</div></div><div style="margin-left:auto;text-align:right"><div class="mini">Estimated goals</div><strong>${p.h.toFixed(2)} – ${p.a.toFixed(2)}</strong><div class="mini">Home – Away</div></div></div>
+      <div class="probrow">
+        <div class="prob"><small>HOME WIN</small><strong>${pct(p.home)}</strong><div class="bar"><span style="width:${p.home*100}%"></span></div></div>
+        <div class="prob"><small>DRAW</small><strong>${pct(p.draw)}</strong><div class="bar"><span style="width:${p.draw*100}%"></span></div></div>
+        <div class="prob"><small>AWAY WIN</small><strong>${pct(p.away)}</strong><div class="bar"><span style="width:${p.away*100}%"></span></div></div>
+      </div>
+      <div class="statgrid" style="margin-top:9px">
+        <div class="stat"><strong>${pct(p.btts)}</strong><small>Both teams score · Yes</small></div>
+        <div class="stat"><strong>${pct(p.o25)}</strong><small>Over 2.5 total goals</small></div>
+        <div class="stat"><strong>${pct(p.u25)}</strong><small>Under 2.5 total goals</small></div>
+        <div class="stat"><strong>${pct(p.o15)}</strong><small>Over 1.5 total goals</small></div>
+      </div>
+      <div style="margin-top:10px"><span class="pill">Model lean: ${bestPick}</span> <span class="pill">Data confidence: ${p.confidence}%</span></div>
+      <div class="mini" style="margin-top:7px">${m.demo?"Fictional demo data — not a real match prediction":p.sample?`Recent form model · ${p.sample} team-match samples`:"League baseline — recent team history unavailable"}. Confidence reflects data coverage, not guaranteed success.</div>
+      ${p.sample&&m.form?.homeRecent?.length?`<div class="mini" style="margin-top:6px">${formLine(m.homeTeam?.name,m.form.homeRecent)}<br>${formLine(m.awayTeam?.name,m.form.awayRecent)}</div>`:""}`;
+    $("matches").appendChild(card);
+  });
+  updateSummary(matches);
+}
+function updateSummary(matches){
+  if(!matches.length){
+    $("summary").innerHTML='<div class="stat"><strong>0</strong><small>Matches loaded</small></div><div class="stat"><strong>—</strong><small>Average total goals</small></div><div class="stat"><strong>—</strong><small>Home-win lean</small></div><div class="stat"><strong>—</strong><small>BTTS yes lean</small></div>';return;
   }
-  function updateSummary(matches){
-    if(!matches.length){$("summary").innerHTML='<div class="stat"><strong>0</strong><small>Matches loaded</small></div><div class="stat"><strong>—</strong><small>Average goals estimate</small></div><div class="stat"><strong>—</strong><small>Home win picks</small></div><div class="stat"><strong>—</strong><small>BTTS yes picks</small></div>';return;}
-    const ps=matches.map(predict), avg=ps.reduce((s,p)=>s+p.h+p.a,0)/ps.length;
-    $("summary").innerHTML=`<div class="stat"><strong>${matches.length}</strong><small>Matches loaded</small></div><div class="stat"><strong>${avg.toFixed(2)}</strong><small>Average total goals estimate</small></div><div class="stat"><strong>${ps.filter(p=>p.home>p.draw&&p.home>p.away).length}</strong><small>Home win picks</small></div><div class="stat"><strong>${ps.filter(p=>p.btts>=.5).length}</strong><small>BTTS yes estimates</small></div>`;
-  }
-  function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+  const ps=matches.map(predict), goals=ps.reduce((s,p)=>s+p.h+p.a,0)/ps.length;
+  $("summary").innerHTML=`<div class="stat"><strong>${matches.length}</strong><small>Matches loaded</small></div><div class="stat"><strong>${goals.toFixed(2)}</strong><small>Average total goals estimate</small></div><div class="stat"><strong>${ps.filter(p=>p.home>p.draw&&p.home>p.away).length}</strong><small>Home-win lean</small></div><div class="stat"><strong>${ps.filter(p=>p.btts>=.5).length}</strong><small>BTTS yes lean</small></div>`;
+}
 })();
 </script>
 </body>
