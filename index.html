@@ -17,7 +17,7 @@
 </head>
 <body>
 <div class="wrap">
-<header class="top"><div class="logo">⚽</div><div><div class="brand">GoalMind <span style="color:var(--green)">AI</span></div><div class="sub">Football predictions · stats-powered estimates</div></div><div class="tag">FORM MODEL V3</div></header>
+<header class="top"><div class="logo">⚽</div><div><div class="brand">GoalMind <span style="color:var(--green)">AI</span></div><div class="sub">Football predictions · stats-powered estimates</div></div><div class="tag">FORM MODEL V4</div></header>
 <section class="hero">
 <h1>Predict the match.<br><span style="color:var(--green)">Understand the numbers.</span></h1>
 <p>Upcoming fixtures, recent team form and a Poisson score model — presented as probabilities, not guarantees.</p>
@@ -41,6 +41,16 @@
 </div>
 <div id="matches" class="matches" style="margin-top:12px"><div class="empty">No matches yet. Load live matches or try demo mode.</div></div>
 </section>
+<section class="card" id="accuracyCard">
+<h2>3 · Prediction accuracy tracker</h2>
+<p class="muted" style="font-size:13px;margin-top:-4px">Save predictions before kickoff, then enter the final score after the match. Records are stored in this browser on this device.</p>
+<div class="statgrid" id="accuracySummary">
+<div class="stat"><strong>0</strong><small>Scored predictions</small></div><div class="stat"><strong>—</strong><small>1X2 accuracy</small></div><div class="stat"><strong>—</strong><small>Exact score accuracy</small></div><div class="stat"><strong>0</strong><small>Saved predictions</small></div>
+</div>
+<div class="row" style="margin-top:10px"><button class="btn secondary" id="exportBtn" type="button">Export history</button><button class="btn secondary" id="clearHistoryBtn" type="button">Clear history</button></div>
+<div id="accuracyHistory" style="margin-top:12px"><div class="empty">No saved predictions yet. Tap “Save prediction” on a match card.</div></div>
+<div class="notice">Accuracy is based only on predictions you saved and results you entered. Small samples can be misleading; it does not guarantee future performance.</div>
+</section>
 <section class="card">
 <h2>How the model works</h2>
 <p class="muted" style="font-size:13px">The model blends each team's recent scoring and conceding rates with competition averages, applies a small home advantage, and uses a Poisson score matrix to estimate 1X2, likely scores, Over/Under 2.5 and Both Teams To Score. Confidence describes data coverage and sample size — it is not the probability that a pick will win. The model does not currently use confirmed lineups, injuries, tactics, weather or bookmaker odds.</p>
@@ -51,6 +61,22 @@
 <script>
 (() => {
 const $ = id => document.getElementById(id);
+const HISTORY_KEY = "goalmind_accuracy_history_v1";
+function readHistory(){try{const v=JSON.parse(localStorage.getItem(HISTORY_KEY)||"[]");return Array.isArray(v)?v:[]}catch(e){return []}}
+function writeHistory(items){localStorage.setItem(HISTORY_KEY,JSON.stringify(items));renderAccuracy()}
+function outcome(h,a){return h>a?"Home win":h<a?"Away win":"Draw"}
+function renderAccuracy(){
+ const items=readHistory(), scored=items.filter(x=>x.actualHome!==null&&x.actualAway!==null);
+ const hit=scored.filter(x=>x.predictedOutcome===outcome(x.actualHome,x.actualAway)).length;
+ const exact=scored.filter(x=>x.predictedHome===x.actualHome&&x.predictedAway===x.actualAway).length;
+ $("accuracySummary").innerHTML=`<div class="stat"><strong>${scored.length}</strong><small>Scored predictions</small></div><div class="stat"><strong>${scored.length?Math.round(hit/scored.length*100)+"%":"—"}</strong><small>1X2 accuracy</small></div><div class="stat"><strong>${scored.length?Math.round(exact/scored.length*100)+"%":"—"}</strong><small>Exact score accuracy</small></div><div class="stat"><strong>${items.length}</strong><small>Saved predictions</small></div>`;
+ if(!items.length){$("accuracyHistory").innerHTML='<div class="empty">No saved predictions yet. Tap “Save prediction” on a match card.</div>';return}
+ $("accuracyHistory").innerHTML=items.slice().reverse().map(x=>{const done=x.actualHome!==null&&x.actualAway!==null;const correct=done&&x.predictedOutcome===outcome(x.actualHome,x.actualAway);return `<div class="match" style="margin-bottom:8px"><div class="matchtop"><span>${escapeHtml(x.competition)}</span><span>${escapeHtml(x.date)}</span></div><div class="teams"><span>${escapeHtml(x.home)}</span><span class="vs">VS</span><span>${escapeHtml(x.away)}</span></div><div class="mini" style="margin-top:8px">Prediction: <b>${escapeHtml(x.predictedOutcome)}</b> · Exact score: <b>${x.predictedHome}–${x.predictedAway}</b></div>${done?`<div style="margin-top:8px"><span class="pill">Final: ${x.actualHome}–${x.actualAway}</span> <span class="pill">1X2: ${correct?"Correct":"Incorrect"}</span> <span class="pill">Exact: ${x.predictedHome===x.actualHome&&x.predictedAway===x.actualAway?"Correct":"Incorrect"}</span></div>`:`<form class="resultForm" data-id="${escapeHtml(x.id)}" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-top:10px"><div style="flex:1;min-width:70px"><label>Home final score</label><input name="homeScore" type="number" min="0" max="30" required style="width:100%;padding:10px;border-radius:9px;background:#081625;color:#edf4ff;border:1px solid #314860"></div><div style="flex:1;min-width:70px"><label>Away final score</label><input name="awayScore" type="number" min="0" max="30" required style="width:100%;padding:10px;border-radius:9px;background:#081625;color:#edf4ff;border:1px solid #314860"></div><button class="btn" type="submit">Save final score</button></form>`}<div style="margin-top:8px"><button class="btn secondary deletePrediction" data-id="${escapeHtml(x.id)}" type="button">Remove</button></div></div>`}).join("");
+}
+$("accuracyHistory").addEventListener("submit",e=>{if(!e.target.matches(".resultForm"))return;e.preventDefault();const id=e.target.dataset.id,h=Number(e.target.homeScore.value),a=Number(e.target.awayScore.value);if(!Number.isInteger(h)||!Number.isInteger(a)||h<0||a<0)return;const items=readHistory();const item=items.find(x=>x.id===id);if(item){item.actualHome=h;item.actualAway=a;item.completedAt=new Date().toISOString();writeHistory(items)}});
+$("accuracyHistory").addEventListener("click",e=>{const b=e.target.closest(".deletePrediction");if(!b)return;writeHistory(readHistory().filter(x=>x.id!==b.dataset.id))});
+$("clearHistoryBtn").addEventListener("click",()=>{if(confirm("Delete all saved predictions on this device? This cannot be undone.")){localStorage.removeItem(HISTORY_KEY);renderAccuracy()}});
+$("exportBtn").addEventListener("click",()=>{const data=JSON.stringify(readHistory(),null,2);const blob=new Blob([data],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="goalmind-prediction-history.json";a.click();URL.revokeObjectURL(url)});
 const status = (msg, bad=false) => { $("status").textContent=msg; $("status").style.color=bad?"#ff9baa":"#9bb0c9"; };
 $("loadBtn").addEventListener("click", loadMatches);
 $("demoBtn").addEventListener("click", () => {
@@ -197,11 +223,21 @@ function renderMatches(matches){
         <div class="stat"><strong>${pct(p.o15)}</strong><small>Over 1.5 total goals</small></div>
       </div>
       <div style="margin-top:10px"><span class="pill">Model lean: ${bestPick}</span> <span class="pill">Data confidence: ${p.confidence}%</span></div>
+      <div style="margin-top:10px"><button class="btn savePrediction" type="button" data-id="${escapeHtml(String(m.id||`${m.homeTeam?.name}-${m.awayTeam?.name}-${m.utcDate}`))}" ${m.demo?"disabled":""}>Save prediction</button></div>
       <div class="mini" style="margin-top:7px">${m.demo?"Fictional demo data — not a real match prediction":p.sample?`Recent form model · ${p.sample} team-match samples`:"League baseline — recent team history unavailable"}. Confidence reflects data coverage, not guaranteed success.</div>
       ${p.sample&&m.form?.homeRecent?.length?`<div class="mini" style="margin-top:6px">${formLine(m.homeTeam?.name,m.form.homeRecent)}<br>${formLine(m.awayTeam?.name,m.form.awayRecent)}</div>`:""}`;
     $("matches").appendChild(card);
   });
   updateSummary(matches);
+  document.querySelectorAll(".savePrediction").forEach(btn=>btn.addEventListener("click",()=>{
+    const m=matches.find(x=>String(x.id||`${x.homeTeam?.name}-${x.awayTeam?.name}-${x.utcDate}`)===btn.dataset.id);if(!m||m.demo)return;
+    const p=predict(m), pick=p.home>=p.draw&&p.home>=p.away?"Home win":p.draw>=p.away?"Draw":"Away win";
+    const items=readHistory(), id=String(m.id||`${m.homeTeam?.name}-${m.awayTeam?.name}-${m.utcDate}`);
+    if(items.some(x=>x.id===id)){status("This match prediction is already saved in your history.");return}
+    const score=p.best.score.split(/[–-]/).map(Number);
+    items.push({id,competition:m.competition?.name||$("league").selectedOptions[0].textContent,date:m.utcDate?new Date(m.utcDate).toLocaleString():"Date TBC",home:m.homeTeam?.name||"Home",away:m.awayTeam?.name||"Away",predictedOutcome:pick,predictedHome:score[0],predictedAway:score[1],predictedAt:new Date().toISOString(),actualHome:null,actualAway:null});
+    writeHistory(items);status("Prediction saved on this device. After the match, enter its final score in the accuracy tracker.");
+  }));
 }
 function updateSummary(matches){
   if(!matches.length){
@@ -210,6 +246,7 @@ function updateSummary(matches){
   const ps=matches.map(predict), goals=ps.reduce((s,p)=>s+p.h+p.a,0)/ps.length;
   $("summary").innerHTML=`<div class="stat"><strong>${matches.length}</strong><small>Matches loaded</small></div><div class="stat"><strong>${goals.toFixed(2)}</strong><small>Average total goals estimate</small></div><div class="stat"><strong>${ps.filter(p=>p.home>p.draw&&p.home>p.away).length}</strong><small>Home-win lean</small></div><div class="stat"><strong>${ps.filter(p=>p.btts>=.5).length}</strong><small>BTTS yes lean</small></div>`;
 }
+renderAccuracy();
 })();
 </script>
 </body>
