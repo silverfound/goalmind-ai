@@ -21,19 +21,14 @@
     <h1>Predict the match.<br><span style="color:var(--green)">Understand the numbers.</span></h1>
     <p>Live fixtures + recent completed results feed a form-based Poisson model. Predictions are estimates, never guarantees.</p>
     <div class="row"><button class="btn" id="loadBtn">Load upcoming matches</button><button class="btn secondary" id="demoBtn">Try demo mode</button></div>
-    <div class="status" id="status">To load live data, add your free football-data.org API token below. Demo mode works without a token.</div>
-  </section>
-  <section class="card">
-    <h2>1 · Connect free football data</h2>
-    <p class="muted" style="font-size:13px;margin-top:-5px">Get a free token from football-data.org, then paste it here. This page sends it directly to their API from your browser.</p>
-    <label for="token">API token</label><input id="token" type="password" autocomplete="off" placeholder="Paste your football-data.org token">
-    <div class="row" style="margin-top:10px"><button class="btn secondary" id="saveBtn">Use token on this page</button><button class="btn secondary" id="clearBtn">Clear token</button></div>
-    <div class="notice" style="margin-top:12px">Privacy note: this starter keeps the token only in the open page's memory and does not save it to a server. Do not share screenshots containing your token. Free API coverage and request limits apply.</div>
+    <div class="status" id="status">Ready to load live matches. Select a competition and date range, then tap Load upcoming matches.</div>
+  
   </section>
   <section class="card">
     <h2>2 · Choose league and date range</h2>
     <div class="fieldgrid">
-      <div><label for="league">Competition</label><select id="league"><option value="PL">Premier League (England)</option><option value="PD">La Liga (Spain)</option><option value="BL1">Bundesliga (Germany)</option><option value="SA">Serie A (Italy)</option><option value="FL1">Ligue 1 (France)</option><option value="CL">Champions League</option><option value="DED">Eredivisie (Netherlands)</option><option value="PPL">Primeira Liga (Portugal)</option></select></div>
+      <div><label for="league">Competition</label><select id="league"><option value="PL">Premier League (England)</option><option value="ELC">Championship (England)</option><option value="PD">La Liga (Spain)</option><option value="BL1">Bundesliga (Germany)</option><option value="SA">Serie A (Italy)</option><option value="FL1">Ligue 1 (France)</option><option value="CL">Champions League</option><option value="EL">Europa League</option><option value="DED">Eredivisie (Netherlands)</option><option value="PPL">Primeira Liga (Portugal)</option><option value="BSA">Brasileirão (Brazil)</option><option value="EC">European Championship</option><option value="WC">World Cup</option></select></div>
+      
       <div><label for="days">Upcoming days</label><select id="days"><option value="7">Next 7 days</option><option value="3">Next 3 days</option><option value="14">Next 14 days</option></select></div>
     </div>
     <div class="status">Competition coverage depends on your API plan. If a league is unavailable, try another competition or demo mode.</div>
@@ -54,11 +49,11 @@
 </div>
 <script>
 (() => {
-  let apiToken = "";
+  
   const $ = id => document.getElementById(id);
   const status = (msg, bad=false) => { $("status").textContent=msg; $("status").style.color=bad?"#ff9baa":"#9bb0c9"; };
-  $("saveBtn").addEventListener("click",()=>{apiToken=$("token").value.trim();status(apiToken?"Token is in page memory. Tap “Load upcoming matches”.":"Paste a token first.",!apiToken);});
-  $("clearBtn").addEventListener("click",()=>{apiToken="";$("token").value="";status("Token cleared from page memory.");});
+  
+  
   $("loadBtn").addEventListener("click",loadMatches);
   $("demoBtn").addEventListener("click",()=>{renderMatches(demoMatches());status("Demo mode: sample fixtures and sample stats only — not live fixtures.");});
   const demoMatches=()=>[
@@ -77,7 +72,7 @@
       
       const upcomingUrl=`https://api.football-data.org/v4/competitions/${encodeURIComponent(comp)}/matches?dateFrom=${fmt(now)}&dateTo=${fmt(to)}&status=SCHEDULED`;
       const historyUrl=`https://api.football-data.org/v4/competitions/${encodeURIComponent(comp)}/matches?dateFrom=${fmt(historyFrom)}&dateTo=${fmt(now)}&status=FINISHED`;
-      const explain=(res)=>{let msg=`API returned HTTP ${res.status}.`;if(res.status===401)msg+=" Token missing, invalid, or not accepted. Check it on football-data.org.";if(res.status===403)msg+=" This competition or historical data may not be included in your API plan.";if(res.status===429)msg+=" API request limit may have been reached; wait a minute and retry.";return msg;};
+      const explain=(res)=>{let msg=`API returned HTTP ${res.status}.`;if(res.status===401)msg+=" Server token missing or invalid. Please check the Netlify environment variable.";if(res.status===403)msg+=" This competition or historical data may not be included in your API plan.";if(res.status===429)msg+=" API request limit may have been reached; wait a minute and retry.";return msg;};
       let upRes;
       try { upRes=await fetch('/.netlify/functions/football-data?path='+encodeURIComponent(new URL(upcomingUrl).pathname+new URL(upcomingUrl).search)); }
       catch(e) { throw new Error("Could not connect to the upcoming-matches API from this browser (network/CORS/browser restriction). Try Chrome, turn off ad-blocking/private DNS if enabled, or retry later. Technical detail: "+(e?.message||"fetch failed")); }
@@ -97,7 +92,7 @@
       const usable=matches.filter(m=>m.form?.sampleSize>0).length;
       status(`Loaded ${matches.length} fixtures + ${history.length} completed results. Recent form available for ${usable} fixtures. Predictions are estimates, not guarantees.`);
       renderMatches(matches);
-    }catch(e){status(e.message+" Check token, internet connection and competition coverage.",true);}
+    }catch(e){status(e.message+" Check Netlify configuration, internet connection and competition coverage.",true);}
     finally{$("loadBtn").disabled=false;}
   }
   function buildTeamForm(history){
