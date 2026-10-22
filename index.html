@@ -17,7 +17,7 @@
 </head>
 <body>
 <div class="wrap">
-<header class="top"><div class="logo">⚽</div><div><div class="brand">GoalMind <span style="color:var(--green)">AI</span></div><div class="sub">Football predictions · statistics + experimental astrology and Abjad</div></div><div class="tag">FORM MODEL V6 · EXPERIMENTAL</div></header>
+<header class="top"><div class="logo">⚽</div><div><div class="brand">GoalMind <span style="color:var(--green)">AI</span></div><div class="sub">Football predictions · statistics + experimental astrology and Abjad</div></div><div class="tag">FORM MODEL V7 · AUTO-DATA EXPERIMENTAL</div></header>
 <section class="hero">
 <h1>Predict the match.<br><span style="color:var(--green)">Understand the numbers.</span></h1>
 <p>Upcoming fixtures, recent team form, Poisson estimates and a separate experimental Astrology + Abjad panel — never guarantees.</p>
@@ -53,7 +53,7 @@
 </section>
 <section class="card" id="mysticInfoCard">
 <h2>4 · Astrology + Abjad Lab</h2>
-<p class="muted" style="font-size:13px">Automatic match metadata where available, plus editable fields for missing captain, coach, referee, stadium and kit-colour details. Statistical, Astrology and Abjad picks are recorded separately for later comparison. Missing data is never invented.</p>
+<p class="muted" style="font-size:13px">V7 automatically uses every stadium, referee, captain, coach and kit-colour field returned by the match feed. It also checks common alternate field names. Abjad uses the English team name when available, then transliterates it approximately. Details not provided by any connected source remain marked as missing; they are never guessed.</p>
 <div class="notice">Astrology and Abjad are experimental entertainment methods, not scientifically validated ways to predict football. Their picks are heuristic and must be evaluated against actual results; no method guarantees success.</div>
 </section>
 <section class="card">
@@ -228,13 +228,13 @@ function manualDetailsForm(m){const key=matchKey(m),d=readDetails()[key]||{};con
  return `<details style="margin-top:10px"><summary style="cursor:pointer;color:var(--blue);font-weight:700">Edit missing match details</summary><form class="detailsForm" data-id="${escapeHtml(key)}" style="margin-top:8px">${fields.map(([name,label,auto])=>`<label>${escapeHtml(label)}${auto?' · automatic':''}</label><input name="${name}" value="${escapeHtml(d[name]||auto||'')}" placeholder="Enter if known" style="width:100%;padding:10px;border-radius:9px;background:#081625;color:#edf4ff;border:1px solid #314860">`).join('')}<button class="btn" type="submit" style="margin-top:10px">Save details</button></form></details>`;
 }
 function extraMatchDetails(m){
- const date=m.utcDate?new Date(m.utcDate):new Date();const weekday=date.toLocaleDateString('en-US',{weekday:'long',timeZone:'UTC'});const sign=sunSign(date);const home=m.homeTeam?.name||'Home',away=m.awayTeam?.name||'Away';const h=abjadApprox(home),a=abjadApprox(away);
+ const date=m.utcDate?new Date(m.utcDate):new Date();const weekday=date.toLocaleDateString('en-US',{weekday:'long',timeZone:'UTC'});const sign=sunSign(date);const home=m.homeTeam?.name||m.homeTeam?.shortName||m.homeTeam?.tla||'Home',away=m.awayTeam?.name||m.awayTeam?.shortName||m.awayTeam?.tla||'Away';const h=abjadApprox(home),a=abjadApprox(away);
  const saved=readDetails()[matchKey(m)]||{};
- const venue=m.venue||m.ground||m.stadium||saved.venue||null;const homeKit=m.homeTeam?.kit||m.homeTeam?.shirtColor||saved.homeKit||null,awayKit=m.awayTeam?.kit||m.awayTeam?.shirtColor||saved.awayKit||null;
- const referee=m.referees?.map(x=>x.name).filter(Boolean).join(', ')||m.referee||saved.referee||null;
- const homeCaptain=m.homeTeam?.captain||saved.homeCaptain||null,awayCaptain=m.awayTeam?.captain||saved.awayCaptain||null;
- const homeCoach=m.homeTeam?.coach||saved.homeCoach||null,awayCoach=m.awayTeam?.coach||saved.awayCoach||null;
- return `<div class="notice" style="margin-top:10px"><b>Astrology + Abjad (experimental)</b><br>Match day: ${escapeHtml(weekday)} · Date-based sun sign: ${escapeHtml(sign)}<br>Home name Abjad (approx.): ${escapeHtml(h.converted||'—')} = ${h.sum}<br>Away name Abjad (approx.): ${escapeHtml(a.converted||'—')} = ${a.sum}<br>Ground: ${escapeHtml(venue||'Not supplied by current data feed')}<br>Referee: ${escapeHtml(referee||'Not supplied by current data feed')}<br>Captains: ${escapeHtml(homeCaptain||'Home not supplied')} / ${escapeHtml(awayCaptain||'Away not supplied')}<br>Coaches: ${escapeHtml(homeCoach||'Home not supplied')} / ${escapeHtml(awayCoach||'Away not supplied')}<br>Kit colours: ${escapeHtml(homeKit||'Home not supplied')} / ${escapeHtml(awayKit||'Away not supplied')}<br><span class="mini">Abjad values use approximate Latin-to-Arabic transliteration, so names with multiple spellings may produce different totals. This is not a validated prediction method.</span></div>`;
+ const venue=m.venue||m.ground||m.stadium||m.venueName||m.fixture?.venue||m.fixture?.stadium||saved.venue||null;const homeKit=m.homeTeam?.kit||m.homeTeam?.shirtColor||m.homeTeam?.teamColors||m.homeTeam?.colors||m.homeKit||saved.homeKit||null,awayKit=m.awayTeam?.kit||m.awayTeam?.shirtColor||m.awayTeam?.teamColors||m.awayTeam?.colors||m.awayKit||saved.awayKit||null;
+ const referee=m.referees?.map(x=>x.name||x.fullName).filter(Boolean).join(', ')||m.referee||m.officials?.map(x=>x.name||x.fullName).filter(Boolean).join(', ')||saved.referee||null;
+ const homeCaptain=m.homeTeam?.captain||m.homeCaptain||saved.homeCaptain||null,awayCaptain=m.awayTeam?.captain||m.awayCaptain||saved.awayCaptain||null;
+ const homeCoach=m.homeTeam?.coach||m.homeTeam?.manager||m.homeCoach||m.homeManager||saved.homeCoach||null,awayCoach=m.awayTeam?.coach||m.awayTeam?.manager||m.awayCoach||m.awayManager||saved.awayCoach||null;
+ return `<div class="notice" style="margin-top:10px"><b>Astrology + Abjad (experimental)</b><br>Match day: ${escapeHtml(weekday)} · Date-based sun sign: ${escapeHtml(sign)}<br>Home name Abjad (approx.): ${escapeHtml(h.converted||'—')} = ${h.sum}<br>Away name Abjad (approx.): ${escapeHtml(a.converted||'—')} = ${a.sum}<br>Ground: ${escapeHtml(venue||'Not supplied by current data feed')}<br>Referee: ${escapeHtml(referee||'Not supplied by current data feed')}<br>Captains: ${escapeHtml(homeCaptain||'Home not supplied')} / ${escapeHtml(awayCaptain||'Away not supplied')}<br>Coaches: ${escapeHtml(homeCoach||'Home not supplied')} / ${escapeHtml(awayCoach||'Away not supplied')}<br>Kit colours: ${escapeHtml(homeKit||'Home not supplied')} / ${escapeHtml(awayKit||'Away not supplied')}<br><span class="mini">Abjad uses the English team name supplied by the feed where available, converted with approximate Latin-to-Arabic transliteration. Different spellings may produce different totals. This is not a validated prediction method.</span></div>`;
 }
 function renderMatches(matches){
   $("matches").innerHTML="";
@@ -263,7 +263,7 @@ function renderMatches(matches){
       <div style="margin-top:10px"><button class="btn savePrediction" type="button" data-id="${escapeHtml(String(m.id||`${m.homeTeam?.name}-${m.awayTeam?.name}-${m.utcDate}`))}" ${m.demo?"disabled":""}>Save prediction</button></div>
       <div class="mini" style="margin-top:7px">${m.demo?"Fictional demo data — not a real match prediction":p.sample?`Recent form model · ${p.sample} team-match samples`:"League baseline — recent team history unavailable"}. Confidence reflects data coverage, not guaranteed success.</div>
       ${extraMatchDetails(m)}
-      <div class="notice"><b>Experimental picks (not evidence-based)</b><br>Astrology heuristic: ${escapeHtml(experimentalPicks(m).astrologyPick)}<br>Abjad heuristic: ${escapeHtml(experimentalPicks(m).abjadPick)}<br><span class="mini">These are transparent placeholder rules for comparison only, not real astrological calculations or validated forecasts.</span></div>
+      <div class="notice"><b>Experimental picks (not evidence-based)</b><br>Astrology heuristic: ${escapeHtml(experimentalPicks(m).astrologyPick)}<br>Abjad heuristic: ${escapeHtml(experimentalPicks(m).abjadPick)}<br><span class="mini">These are simple experimental heuristics for comparison only, not reliable astrological calculations or validated forecasts. Automatic metadata depends on fields supplied by the connected data source; this page does not invent missing facts.</span></div>
       ${manualDetailsForm(m)}
       ${p.sample&&m.form?.homeRecent?.length?`<div class="mini" style="margin-top:6px">${formLine(m.homeTeam?.name,m.form.homeRecent)}<br>${formLine(m.awayTeam?.name,m.form.awayRecent)}</div>`:""}`;
     $("matches").appendChild(card);
