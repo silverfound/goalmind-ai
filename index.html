@@ -67,25 +67,25 @@
     {utcDate:new Date(Date.now()+3*86400000).toISOString(),homeTeam:{name:"Red City"},awayTeam:{name:"Blue County"},demo:true,form:{hg:1.4,ha:1.4,ag:1.5,aa:1.2}}
   ];
   async function loadMatches(){
-    if(!apiToken){status("Please paste your football-data.org API token and tap “Use token on this page”, or use demo mode.",true);return;}
+    
     const comp=$("league").value, days=Number($("days").value);
     const now=new Date(), to=new Date(Date.now()+days*86400000), historyFrom=new Date(Date.now()-120*86400000);
     const fmt=d=>d.toISOString().slice(0,10);
     status("Loading upcoming fixtures and the last 120 days of results…");
     $("loadBtn").disabled=true;
     try{
-      const headers={"X-Auth-Token":apiToken};
+      
       const upcomingUrl=`https://api.football-data.org/v4/competitions/${encodeURIComponent(comp)}/matches?dateFrom=${fmt(now)}&dateTo=${fmt(to)}&status=SCHEDULED`;
       const historyUrl=`https://api.football-data.org/v4/competitions/${encodeURIComponent(comp)}/matches?dateFrom=${fmt(historyFrom)}&dateTo=${fmt(now)}&status=FINISHED`;
       const explain=(res)=>{let msg=`API returned HTTP ${res.status}.`;if(res.status===401)msg+=" Token missing, invalid, or not accepted. Check it on football-data.org.";if(res.status===403)msg+=" This competition or historical data may not be included in your API plan.";if(res.status===429)msg+=" API request limit may have been reached; wait a minute and retry.";return msg;};
       let upRes;
-      try { upRes=await fetch(upcomingUrl,{headers}); }
+      try { upRes=await fetch('/.netlify/functions/football-data?path='+encodeURIComponent(new URL(upcomingUrl).pathname+new URL(upcomingUrl).search)); }
       catch(e) { throw new Error("Could not connect to the upcoming-matches API from this browser (network/CORS/browser restriction). Try Chrome, turn off ad-blocking/private DNS if enabled, or retry later. Technical detail: "+(e?.message||"fetch failed")); }
       if(!upRes.ok)throw new Error(explain(upRes));
       let upData;
       try { upData=await upRes.json(); } catch(e) { throw new Error("Upcoming-matches API responded, but its data could not be read as JSON."); }
       let histRes;
-      try { histRes=await fetch(historyUrl,{headers}); }
+      try { histRes=await fetch('/.netlify/functions/football-data?path='+encodeURIComponent(new URL(historyUrl).pathname+new URL(historyUrl).search)); }
       catch(e) { throw new Error("Upcoming matches API worked, but the recent-results API request failed (network/CORS/browser restriction). Try again later. Technical detail: "+(e?.message||"fetch failed")); }
       if(!histRes.ok)throw new Error("Upcoming fixtures loaded, but recent results could not be loaded. "+explain(histRes)+" Try again later; model may lack recent form.");
       let histData;
