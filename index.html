@@ -342,5 +342,16 @@ function updateSummary(matches){
 renderAccuracy();
 })();
 </script>
+ 
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js")
+      .then(() => console.log("GoalMind AI service worker registered"))
+      .catch((error) => console.error("Service worker error:", error));
+  });
+}
+</script>
+ 
 </body>
 </html>
