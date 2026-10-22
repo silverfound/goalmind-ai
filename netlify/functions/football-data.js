@@ -15,8 +15,13 @@ exports.handler = async function (event) {
   const path = event.queryStringParameters?.path || "";
 
   if (
-    !path.startsWith("/v4/competitions/") ||
-    path.includes("..")
+  !(
+    path.startsWith("/v4/competitions/") ||
+    path.startsWith("/v4/teams/")
+  ) ||
+  path.includes("..") ||
+  path.includes("://")
+) 
   ) {
     return {
       statusCode: 400,
