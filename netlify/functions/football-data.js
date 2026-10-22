@@ -2,10 +2,15 @@
 exports.handler = async function (event) {
   const token = process.env.FOOTBALL_DATA_TOKEN;
 
+  const headers = {
+    "Content-Type": "application/json",
+    "Cache-Control": "no-store"
+  };
+
   if (!token) {
     return {
       statusCode: 500,
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({
         error: "FOOTBALL_DATA_TOKEN is not configured in Netlify."
       })
@@ -14,17 +19,21 @@ exports.handler = async function (event) {
 
   const path = event.queryStringParameters?.path || "";
 
-  if (
-  !(
+  const allowedPath =
     path.startsWith("/v4/competitions/") ||
-    path.startsWith("/v4/teams/")
-  ) ||
-  path.includes("..") ||
-  path.includes("://")
-) 
+    path.startsWith("/v4/teams/");
+
+  if (
+    !allowedPath ||
+    path.includes("..") ||
+    path.includes("://") ||
+    path.includes("\\") ||
+    path.includes("?") ||
+    path.includes("#")
   ) {
     return {
       statusCode: 400,
+      headers,
       body: JSON.stringify({ error: "Invalid API path." })
     };
   }
@@ -41,17 +50,16 @@ exports.handler = async function (event) {
 
     return {
       statusCode: response.status,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-store"
-      },
+      headers,
       body: await response.text()
     };
   } catch (error) {
     return {
       statusCode: 502,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: "Football API request failed." })
+      headers,
+      body: JSON.stringify({
+        error: "Football API request failed."
+      })
     };
   }
 };
